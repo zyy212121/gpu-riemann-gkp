@@ -1,0 +1,49 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class volVectorField;
+    location "0";
+    object U;
+}
+dimensions [0 1 -1 0 0 0 0];
+internalField nonuniform List<vector>
+27
+(
+    (-3 0 3)
+    (-2 -1 3)
+    (-1 -2 3)
+    (-1 0 1)
+    (0 -1 1)
+    (1 -2 1)
+    (1 0 -1)
+    (2 -1 -1)
+    (3 -2 -1)
+    (-3 1 2)
+    (-2 0 2)
+    (-1 -1 2)
+    (-1 1 -0)
+    (0 0 -0)
+    (1 -1 -0)
+    (1 1 -2)
+    (2 0 -2)
+    (3 -1 -2)
+    (-3 2 1)
+    (-2 1 1)
+    (-1 0 1)
+    (-1 2 -1)
+    (0 1 -1)
+    (1 0 -1)
+    (1 2 -3)
+    (2 1 -3)
+    (3 0 -3)
+);
+boundaryField
+{
+    xMin { type fixedValue; value uniform (0 0 0); }
+    xMax { type fixedValue; value uniform (0 0 0); }
+    yMin { type fixedValue; value uniform (0 0 0); }
+    yMax { type fixedValue; value uniform (0 0 0); }
+    zMin { type fixedValue; value uniform (0 0 0); }
+    zMax { type fixedValue; value uniform (0 0 0); }
+}

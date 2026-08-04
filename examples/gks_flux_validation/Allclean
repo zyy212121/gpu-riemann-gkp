@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+case_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)/scripts/openfoam10-env.sh"
+set -euo pipefail
+
+for child in sodShockTube planarCouette fourierSlab fourierSlabPr04 fourierSlabPr08; do
+    "${case_dir}/${child}/Allclean"
+done
+
+"${case_dir}/acousticWave/Allclean"

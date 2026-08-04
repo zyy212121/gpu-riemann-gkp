@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="930" viewBox="0 0 1800 930">
+  <defs>
+    <style>
+      text { font-family: "Microsoft YaHei", "Noto Sans CJK SC", "SimHei", sans-serif; fill: #263442; }
+      .panel { fill: #ffffff; stroke: #9aa7b5; stroke-width: 2; }
+      .title { font-size: 28px; font-weight: 700; }
+      .subtitle { font-size: 21px; font-weight: 700; }
+      .label { font-size: 18px; }
+      .small { font-size: 16px; }
+      .tiny { font-size: 14px; }
+      .ordinary { fill: #e9f5ef; stroke: #3d8a68; stroke-width: 2; }
+      .heavy { fill: #e8f2fa; stroke: #4b7fae; stroke-width: 2; }
+      .worker { fill: #f1ecf8; stroke: #8063a3; stroke-width: 2; }
+      .neutral { fill: #f5f7f9; stroke: #8795a5; stroke-width: 2; }
+      .ordinaryText { fill: #267253; }
+      .heavyText { fill: #326b9f; }
+      .workerText { fill: #6c4e91; }
+      .arrow { fill: none; stroke: #536477; stroke-width: 3; marker-end: url(#arrowhead); }
+      .thinArrow { fill: none; stroke: #536477; stroke-width: 2; marker-end: url(#arrowhead); }
+      .divider { stroke: #9aa7b5; stroke-width: 2; stroke-dasharray: 7 6; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#536477"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="930" fill="#ffffff"/>
+
+  <!-- Classification -->
+  <rect class="panel" x="40" y="35" width="1720" height="205" rx="8"/>
+  <text class="title" x="70" y="78">1  Build two task classes from cell occupancy</text>
+  <text class="small" x="1725" y="78" text-anchor="end">Example: high-occupancy threshold H=512, tile size T=256</text>
+
+  <rect class="ordinary" x="90" y="110" width="360" height="92" rx="6"/>
+  <text class="subtitle ordinaryText" x="120" y="146">Cell 0</text>
+  <text class="label ordinaryText" x="420" y="146" text-anchor="end">80 particles</text>
+  <text class="small" x="270" y="181" text-anchor="middle">Regular cell: one cell task</text>
+
+  <rect class="ordinary" x="490" y="110" width="360" height="92" rx="6"/>
+  <text class="subtitle ordinaryText" x="520" y="146">Cell 1</text>
+  <text class="label ordinaryText" x="820" y="146" text-anchor="end">260 particles</text>
+  <text class="small" x="670" y="181" text-anchor="middle">Regular cell: one cell task</text>
+
+  <rect class="heavy" x="890" y="110" width="820" height="92" rx="6"/>
+  <text class="subtitle heavyText" x="920" y="146">Cell 2</text>
+  <text class="label heavyText" x="1680" y="146" text-anchor="end">910 particles</text>
+  <text class="small" x="1030" y="181">High-occupancy cell:</text>
+  <rect class="heavy" x="1170" y="157" width="120" height="34" rx="3"/><text class="tiny heavyText" x="1230" y="180" text-anchor="middle">Subtask 0:256</text>
+  <rect class="heavy" x="1300" y="157" width="120" height="34" rx="3"/><text class="tiny heavyText" x="1360" y="180" text-anchor="middle">Subtask 1:256</text>
+  <rect class="heavy" x="1430" y="157" width="120" height="34" rx="3"/><text class="tiny heavyText" x="1490" y="180" text-anchor="middle">Subtask 2:256</text>
+  <rect class="heavy" x="1560" y="157" width="120" height="34" rx="3"/><text class="tiny heavyText" x="1620" y="180" text-anchor="middle">Subtask 3:142</text>
+
+  <path class="arrow" d="M900 245 V273"/>
+
+  <!-- Kernel sequence -->
+  <rect class="panel" x="40" y="280" width="1720" height="390" rx="8"/>
+  <text class="title" x="70" y="323">2  Run two independent kernels in sequence</text>
+  <text class="small" x="1725" y="323" text-anchor="end">Regular threads do not become resident workers during execution</text>
+
+  <!-- ordinary kernel lane -->
+  <text class="subtitle" x="90" y="372">Regular-cell reduction kernel</text>
+  <rect class="ordinary" x="90" y="398" width="230" height="74" rx="5"/>
+  <text class="label ordinaryText" x="205" y="428" text-anchor="middle">Block 0</text>
+  <text class="small ordinaryText" x="205" y="455" text-anchor="middle">Process Cell 0</text>
+  <rect class="ordinary" x="350" y="398" width="230" height="74" rx="5"/>
+  <text class="label ordinaryText" x="465" y="428" text-anchor="middle">Block 1</text>
+  <text class="small ordinaryText" x="465" y="455" text-anchor="middle">Process Cell 1</text>
+  <rect class="neutral" x="610" y="398" width="230" height="74" rx="5"/>
+  <text class="label" x="725" y="428" text-anchor="middle">Cell 2 block</text>
+  <text class="small" x="725" y="455" text-anchor="middle">Exit after identifying high occupancy</text>
+
+  <path class="arrow" d="M855 435 H935"/>
+  <rect class="neutral" x="950" y="392" width="260" height="86" rx="6"/>
+  <text class="subtitle" x="1080" y="426" text-anchor="middle">Kernel boundary</text>
+  <text class="small" x="1080" y="454" text-anchor="middle">Launch after the regular path ends</text>
+  <path class="arrow" d="M1225 435 H1305"/>
+  <rect class="worker" x="1320" y="398" width="360" height="74" rx="5"/>
+  <text class="label workerText" x="1500" y="428" text-anchor="middle">Launch a fixed number of worker blocks</text>
+  <text class="small workerText" x="1500" y="455" text-anchor="middle">The count is set by the streaming-multiprocessor scale</text>
+
+  <line class="divider" x1="85" y1="500" x2="1715" y2="500"/>
+
+  <!-- persistent worker lane -->
+  <text class="subtitle" x="90" y="548">High-occupancy subtask reduction kernel</text>
+  <rect class="heavy" x="90" y="570" width="500" height="72" rx="5"/>
+  <text class="label heavyText" x="120" y="600">Device task queue</text>
+  <text class="small heavyText" x="120" y="628">Subtask 0 Subtask 1 Subtask 2 Subtask 3</text>
+
+  <path class="arrow" d="M605 606 H690"/>
+  <text class="tiny" x="647" y="590" text-anchor="middle">Dynamically claim</text>
+
+  <rect class="worker" x="705" y="542" width="420" height="54" rx="5"/>
+  <text class="label workerText" x="915" y="576" text-anchor="middle">Worker block 0:Subtask 0 → Subtask 2</text>
+  <rect class="worker" x="705" y="608" width="420" height="54" rx="5"/>
+  <text class="label workerText" x="915" y="642" text-anchor="middle">Worker block 1:Subtask 1 → Subtask 3</text>
+
+  <path class="arrow" d="M1140 569 H1230"/>
+  <path class="arrow" d="M1140 635 H1230"/>
+  <rect class="neutral" x="1245" y="542" width="435" height="120" rx="6"/>
+  <text class="subtitle" x="1462" y="578" text-anchor="middle">One block processes multiple tasks in sequence</text>
+  <text class="small" x="1462" y="610" text-anchor="middle">Claim the next task after completing a subtask</text>
+  <text class="small" x="1462" y="638" text-anchor="middle">End the kernel when the queue is empty</text>
+
+  <!-- Finalize -->
+  <rect class="panel" x="40" y="710" width="1720" height="180" rx="8"/>
+  <text class="title" x="70" y="753">3  Second-level merge for a high-occupancy cell</text>
+
+  <rect class="heavy" x="100" y="785" width="245" height="66" rx="5"/>
+  <text class="label heavyText" x="222" y="825" text-anchor="middle">Subtask 0 partial moments</text>
+  <rect class="heavy" x="370" y="785" width="245" height="66" rx="5"/>
+  <text class="label heavyText" x="492" y="825" text-anchor="middle">Subtask 1 partial moments</text>
+  <rect class="heavy" x="640" y="785" width="245" height="66" rx="5"/>
+  <text class="label heavyText" x="762" y="825" text-anchor="middle">Subtask 2 partial moments</text>
+  <rect class="heavy" x="910" y="785" width="245" height="66" rx="5"/>
+  <text class="label heavyText" x="1032" y="825" text-anchor="middle">Subtask 3 partial moments</text>
+
+  <path class="arrow" d="M1170 818 H1285"/>
+  <rect class="neutral" x="1300" y="777" width="390" height="82" rx="6"/>
+  <text class="subtitle" x="1495" y="810" text-anchor="middle">Dedicated merge kernel</text>
+  <text class="small" x="1495" y="839" text-anchor="middle">Form the final statistics for Cell 2</text>
+</svg>

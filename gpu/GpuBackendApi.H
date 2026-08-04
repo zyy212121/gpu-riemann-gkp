@@ -1,0 +1,166 @@
+#ifndef UGKWP_GPU_BACKEND_API_H
+#define UGKWP_GPU_BACKEND_API_H
+
+// Stable C ABI shared by the GPL OpenFOAM frontend and the independent GPU
+// backend.  This header deliberately contains no OpenFOAM or CUDA types.
+
+extern "C" int ugkwpGpuResidentStrictCreate
+(
+    int nCells, int nFaces, int nInternalFaces, int nCellPlanes,
+    int particleCapacity, int maxFaceWalkHops, double parcelMass,
+    unsigned long long rngSeed, double gammaGas, double Rgas,
+    double rhoSolid, int solveParticleTemperature,
+    double particleThermalRho, double particleCp, double gasMu,
+    double gasPr, double particleDiameterFallback,
+    double particleDiameterMin, double particleDiameterMax,
+    double particleDiameterSigma, double injectionTheta, double rhoMin,
+    double TgasMin, double epsSMin, double thetaMin, double TpMin,
+    double TpMax, int collisionalPressureEnabled,
+    double collisionalRestitution, double pressureKickFraction,
+    int jammingPressureEnabled, double packingFraction,
+    double jammingOnset, double jammingPressureScale,
+    double jammingRegularization,
+    int gasFluxScheme, int gasReconstruction, int gasLimiter,
+    int gasTimeIntegrator, int gasRobustFallback, int turbulenceModel,
+    double gasEntropyFixCoefficient, double lesDeltaCoeff,
+    double turbulentPrandtl, double waleCw, double smagorinskyCs,
+    double maxDiffusionNumber, int csrCellLocalPathEnabled,
+    int csrHeavyReductionEnabled,
+    int csrHeavyCellThreshold, int csrHeavyTileParticles,
+    int csrHeavyWorkerBlocksPerSm, int csrWarpAggregatedBinning,
+    void** handle
+);
+
+extern "C" int ugkwpGpuResidentStrictUploadMesh
+(
+    void* handle, const int* faceOwner, const int* faceNeighbour,
+    const double* V, const double* Cx, const double* Cy, const double* Cz,
+    const double* faceCx, const double* faceCy, const double* faceCz,
+    const double* Sfx, const double* Sfy, const double* Sfz,
+    const double* magSf, const double* deltaCoeffs, const double* faceWeight,
+    const double* cellLength, const int* cellPlaneStart,
+    const int* cellPlaneCount, const int* cellFaceId,
+    const int* cellFaceNeighbor, const int* cellFaceKind,
+    const double* cellFaceRestitution, const double* cellFaceTangential,
+    const double* planeNx, const double* planeNy, const double* planeNz,
+    const double* planeD
+);
+
+extern "C" int ugkwpGpuResidentStrictUploadBoundarySources
+(
+    void* handle, int nBoundarySources, const int* sourceCell,
+    const int* sourceFace, const double* sourcePx, const double* sourcePy,
+    const double* sourcePz, const double* sourceUx, const double* sourceUy,
+    const double* sourceUz, const double* sourceT, const double* sourceTheta,
+    const double* sourceD, const double* sourceMassRate
+);
+
+extern "C" int ugkwpGpuResidentStrictUpdateScheduledInlet
+(
+    void* handle, int nFaces, const int* faceIds, double pressure,
+    double density, double solidVolumeFraction
+);
+
+extern "C" int ugkwpGpuResidentStrictDownloadSourceResidualMass
+(
+    void* handle, int* nSources, int maxSources, int* sourceFace,
+    double* residualMass
+);
+
+extern "C" int ugkwpGpuResidentStrictUploadSourceResidualMass
+(
+    void* handle, int nSources, const int* sourceFace,
+    const double* residualMass
+);
+
+extern "C" int ugkwpGpuResidentStrictUploadGasBoundaryFields
+(
+    void* handle, const int* gasBoundaryKind,
+    const int* gasBoundaryRhoFix, const int* gasBoundaryUFix,
+    const int* gasBoundaryPFix, const int* gasBoundaryTFix,
+    const int* gasBoundaryPWave, const double* gasBoundaryPWaveGamma,
+    const double* gasBoundaryPWaveFieldInf,
+    const double* gasBoundaryPWaveLInf, const double* gasBoundaryRho,
+    const double* gasBoundaryUx, const double* gasBoundaryUy,
+    const double* gasBoundaryUz, const double* gasBoundaryP,
+    const double* gasBoundaryT
+);
+
+extern "C" int ugkwpGpuResidentStrictUploadFields
+(
+    void* handle, const double* rho, const double* rhoUx,
+    const double* rhoUy, const double* rhoUz, const double* rhoE,
+    const double* Ux, const double* Uy, const double* Uz, const double* p,
+    const double* Tgas, const double* epsS, const double* rhoUsx,
+    const double* rhoUsy, const double* rhoUsz, const double* rhoEs,
+    const double* rhoDs, const double* rhoHp, const double* Usx,
+    const double* Usy, const double* Usz, const double* theta,
+    const double* Tp, const double* dMeanCell
+);
+
+extern "C" int ugkwpGpuResidentStrictAdvance
+(
+    void* handle, double dt, double simulationTime
+);
+
+extern "C" int ugkwpGpuResidentStrictComputeGasCourant
+(
+    void* handle, double dt, double targetMaxCo, double* maxCo
+);
+
+extern "C" int ugkwpGpuResidentStrictAdvanceGasOnly(void* handle, double dt);
+
+extern "C" int ugkwpGpuResidentStrictDownloadFields
+(
+    void* handle, double* rho, double* rhoUx, double* rhoUy, double* rhoUz,
+    double* rhoE, double* Ux, double* Uy, double* Uz, double* p,
+    double* Tgas, double* epsS, double* rhoUsx, double* rhoUsy,
+    double* rhoUsz, double* rhoEs, double* rhoDs, double* rhoHp,
+    double* Usx, double* Usy, double* Usz, double* theta, double* Tp,
+    double* dMeanCell
+);
+
+extern "C" int ugkwpGpuResidentStrictDownloadGasBoundaryFields
+(
+    void* handle, double* rho, double* Ux, double* Uy, double* Uz,
+    double* p, double* Tgas
+);
+
+extern "C" int ugkwpGpuResidentStrictUploadParticleRestartMirror
+(
+    void* handle, int nParticles, const double* px, const double* py,
+    const double* pz, const double* pux, const double* puy,
+    const double* puz, const double* pT, const double* pTheta,
+    const double* pd, const double* pm, const int* pCellId,
+    const int* pStatus,
+    const unsigned long long* pRng, const unsigned long long* pOrigId
+);
+
+extern "C" int ugkwpGpuResidentStrictDownloadParticleRestartMirror
+(
+    void* handle, int* nParticles, int maxParticles, double* px, double* py,
+    double* pz, double* pux, double* puy, double* puz, double* pT,
+    double* pTheta, double* pd, double* pm, int* pCellId, int* pStatus,
+    unsigned long long* pRng,
+    unsigned long long* pOrigId
+);
+
+extern "C" int ugkwpGpuResidentStrictDownloadEpsGPrev
+(
+    void* handle, double* epsGPrev
+);
+
+extern "C" int ugkwpGpuResidentStrictUploadEpsGPrev
+(
+    void* handle, const double* epsGPrev
+);
+
+extern "C" int ugkwpGpuResidentStrictDownloadNut
+(
+    void* handle, double* nut
+);
+
+extern "C" void ugkwpGpuResidentStrictRelease(void* handle);
+extern "C" const char* ugkwpGpuResidentStrictLastError();
+
+#endif

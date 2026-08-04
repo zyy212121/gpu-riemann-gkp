@@ -1,0 +1,22 @@
+GPU-Riemann-GKP CUDA Backend Binary License, Version 1.0
+
+Copyright (c) 2026 the GPU-Riemann-GKP backend contributors.
+All rights reserved except for the permissions stated below.
+
+Permission is granted, free of charge, to use and execute an unmodified copy
+of the supplied gpu26CudaBackend binary for any lawful purpose together with
+the GPU-Riemann-GKP public frontend.
+
+Permission is granted to redistribute the unmodified backend binary as part of
+a complete, unmodified GPU-Riemann-GKP binary release that includes this
+licence, the backend manifest, the checksum file, and the public frontend.
+
+The licence grants no right to modify, translate, decompile, disassemble, or
+reverse engineer the backend binary, except where applicable law expressly
+requires such permission. It grants no right to the private backend source.
+
+THE BACKEND BINARY IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
+FROM USE OF OR INABILITY TO USE THE BACKEND BINARY.

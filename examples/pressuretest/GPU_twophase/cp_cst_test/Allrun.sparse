@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+suite_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+events="${suite_dir}/RUN_EVENTS.sparse.tsv"
+
+if [[ -e "${events}" ]]; then
+    echo "ERROR: refusing to overwrite ${events}" >&2
+    exit 1
+fi
+
+printf 'timestamp\tcase\tevent\n' > "${events}"
+
+for level in l0 l1 e1 e2
+do
+    printf '%s\t%s\t%s\n' "$(date --iso-8601=seconds)" "${level}" start >> "${events}"
+    "${suite_dir}/${level}/Allrun"
+    printf '%s\t%s\t%s\n' "$(date --iso-8601=seconds)" "${level}" complete >> "${events}"
+done
+
+touch "${suite_dir}/SPARSE_COMPLETE"

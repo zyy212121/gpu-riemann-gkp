@@ -1,0 +1,52 @@
+# OpenFOAM frontend build products
+Make/linux*/
+*.o
+*.obj
+*.dep
+*.a
+*.so
+*.dll
+*.exe
+
+# Keep the packaged executable-only CUDA backend.
+!backend/linux-x86_64/gpu26CudaBackend
+!backend/linux-x86_64/gpu26CudaBackend-twophaseflux-validation
+
+# Python and test caches
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# Runtime products
+log
+log.*
+log-*
+runtime*
+run.pid
+run.status
+processor*/
+postProcessing/
+core
+core.*
+
+# Generated OpenFOAM time directories
+examples/**/[1-9]*/
+examples/**/0.[0-9]*/
+examples/**/*e-[0-9]*/
+
+# Curated two-phase restart state required by the CP-CST examples
+!examples/pressuretest/GPU_twophase/cp_cst_test/l0/0.10000002/
+!examples/pressuretest/GPU_twophase/cp_cst_test/l0/0.10000002/**
+!examples/pressuretest/GPU_twophase/cp_cst_test/l1/0.10000002/
+!examples/pressuretest/GPU_twophase/cp_cst_test/l1/0.10000002/**
+!examples/pressuretest/GPU_twophase/cp_cst_test/e1/0.10000002/
+!examples/pressuretest/GPU_twophase/cp_cst_test/e1/0.10000002/**
+!examples/pressuretest/GPU_twophase/cp_cst_test/e2/0.10000002/
+!examples/pressuretest/GPU_twophase/cp_cst_test/e2/0.10000002/**
+!examples/pressuretest/GPU_twophase/cp_cst_test/dense/e1/0.10000002/
+!examples/pressuretest/GPU_twophase/cp_cst_test/dense/e1/0.10000002/**
+
+# Editor and downloaded-file metadata
+*:*Zone.Identifier*
+.DS_Store
+Thumbs.db

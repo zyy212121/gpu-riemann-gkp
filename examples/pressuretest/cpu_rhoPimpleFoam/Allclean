@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+case_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)/scripts/openfoam10-env.sh"
+set -euo pipefail
+cd "${case_dir}"
+
+foamListTimes -rm -time '0.00000001:'
+rm -f log.cpu runtime.cpu launch.cpu run.cpu.pid

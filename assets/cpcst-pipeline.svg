@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1120" viewBox="0 0 2400 1120">
+  <defs>
+    <style>
+      text { font-family: "Microsoft YaHei", "Noto Sans CJK SC", "SimHei", sans-serif; fill: #263442; }
+      .panel { fill: #ffffff; stroke: #9aa7b5; stroke-width: 2; }
+      .laneTitle { font-size: 28px; font-weight: 700; }
+      .stageTitle { font-size: 20px; font-weight: 700; }
+      .label { font-size: 17px; }
+      .small { font-size: 15px; }
+      .tiny { font-size: 13px; }
+      .gas { fill: #e8f2fa; stroke: #4b7fae; stroke-width: 2; }
+      .particle { fill: #fff1e3; stroke: #c57b32; stroke-width: 2; }
+      .directory { fill: #e9f5ef; stroke: #3d8a68; stroke-width: 2; }
+      .ordinary { fill: #eef7f1; stroke: #4b8f6e; stroke-width: 1.8; }
+      .heavy { fill: #f1ecf8; stroke: #8063a3; stroke-width: 1.8; }
+      .neutral { fill: #f5f7f9; stroke: #8795a5; stroke-width: 2; }
+      .gasText { fill: #326b9f; }
+      .particleText { fill: #a45d1d; }
+      .directoryText { fill: #267253; }
+      .heavyText { fill: #6c4e91; }
+      .arrow { fill: none; stroke: #536477; stroke-width: 3; marker-end: url(#arrowhead); }
+      .reuseArrow { fill: none; stroke: #3d8a68; stroke-width: 3; marker-end: url(#greenArrowhead); }
+      .guide { fill: none; stroke: #8795a5; stroke-width: 2; stroke-dasharray: 7 6; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#536477"/>
+    </marker>
+    <marker id="greenArrowhead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#3d8a68"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="2400" height="1120" fill="#ffffff"/>
+
+  <!-- time axis -->
+  <text class="stageTitle" x="85" y="50">One time step</text>
+  <path class="arrow" d="M220 43 H2190"/>
+
+  <!-- Gas lane -->
+  <rect class="panel" x="40" y="75" width="2170" height="245" rx="8"/>
+  <text class="laneTitle gasText" x="70" y="118">GKS gas channel</text>
+  <text class="small" x="2168" y="115" text-anchor="end">Cell and mesh-face parallelism</text>
+
+  <rect class="gas" x="150" y="155" width="330" height="100" rx="6"/>
+  <text class="stageTitle gasText" x="315" y="198" text-anchor="middle">Cell conservative-state recovery</text>
+  <text class="small gasText" x="315" y="228" text-anchor="middle">Cell threads</text>
+  <path class="arrow" d="M492 205 H540"/>
+
+  <rect class="gas" x="555" y="155" width="330" height="100" rx="6"/>
+  <text class="stageTitle gasText" x="720" y="198" text-anchor="middle">Cell gradients and limiters</text>
+  <text class="small gasText" x="720" y="228" text-anchor="middle">Cell threads</text>
+  <path class="arrow" d="M897 205 H945"/>
+
+  <rect class="gas" x="960" y="155" width="330" height="100" rx="6"/>
+  <text class="stageTitle gasText" x="1125" y="198" text-anchor="middle">Face kinetic flux</text>
+  <text class="small gasText" x="1125" y="228" text-anchor="middle">Mesh-face threads</text>
+  <path class="arrow" d="M1302 205 H1350"/>
+
+  <rect class="gas" x="1365" y="155" width="330" height="100" rx="6"/>
+  <text class="stageTitle gasText" x="1530" y="198" text-anchor="middle">Cell flux divergence</text>
+  <text class="small gasText" x="1530" y="228" text-anchor="middle">Cell threads</text>
+  <path class="arrow" d="M1707 205 H1755"/>
+
+  <rect class="gas" x="1770" y="155" width="330" height="100" rx="6"/>
+  <text class="stageTitle gasText" x="1935" y="198" text-anchor="middle">Gas–particle coupling update</text>
+  <text class="small gasText" x="1935" y="228" text-anchor="middle">Device-resident fields</text>
+
+  <!-- Particle lane -->
+  <rect class="panel" x="40" y="350" width="2170" height="430" rx="8"/>
+  <text class="laneTitle particleText" x="70" y="393">Particle channel</text>
+  <text class="small" x="2168" y="390" text-anchor="end">Particle threads, cell-segment blocks, and high-occupancy subtask blocks</text>
+
+  <!-- particle simple stage 1 -->
+  <rect class="particle" x="105" y="510" width="130" height="100" rx="6"/>
+  <text class="stageTitle particleText" x="170" y="553" text-anchor="middle">Boundary</text>
+  <text class="stageTitle particleText" x="170" y="582" text-anchor="middle">Injection</text>
+  <path class="arrow" d="M242 560 H257"/>
+
+  <!-- CP-CST build 1 -->
+  <rect class="directory" x="270" y="415" width="205" height="320" rx="7"/>
+  <text class="stageTitle directoryText" x="372" y="447" text-anchor="middle">Pre-migration CP-CST</text>
+  <rect class="ordinary" x="287" y="470" width="171" height="58" rx="4"/>
+  <text class="small directoryText" x="372" y="495" text-anchor="middle">Warp aggregation</text>
+  <text class="small directoryText" x="372" y="516" text-anchor="middle">Counting</text>
+  <path class="reuseArrow" d="M372 532 V548"/>
+  <rect class="ordinary" x="287" y="555" width="171" height="58" rx="4"/>
+  <text class="label directoryText" x="372" y="590" text-anchor="middle">Prefix sum</text>
+  <path class="reuseArrow" d="M372 617 V633"/>
+  <rect class="ordinary" x="287" y="640" width="171" height="70" rx="4"/>
+  <text class="small directoryText" x="372" y="666" text-anchor="middle">Warp aggregation</text>
+  <text class="small directoryText" x="372" y="688" text-anchor="middle">Segmented-index write</text>
+  <path class="arrow" d="M482 560 H497"/>
+
+  <!-- pressure first half -->
+  <rect class="particle" x="510" y="510" width="130" height="100" rx="6"/>
+  <text class="stageTitle particleText" x="575" y="553" text-anchor="middle">Pressure</text>
+  <text class="small particleText" x="575" y="582" text-anchor="middle">First half-step</text>
+  <path class="arrow" d="M647 560 H662"/>
+
+  <!-- Poisson reduction -->
+  <rect class="particle" x="675" y="415" width="220" height="320" rx="7"/>
+  <text class="stageTitle particleText" x="785" y="447" text-anchor="middle">Poisson collision-pool reduction</text>
+  <rect class="ordinary" x="690" y="477" width="190" height="75" rx="4"/>
+  <text class="small directoryText" x="785" y="505" text-anchor="middle">Regular cell segment</text>
+  <text class="small" x="785" y="532" text-anchor="middle">Direct block reduction</text>
+  <rect class="heavy" x="690" y="570" width="190" height="135" rx="4"/>
+  <text class="small heavyText" x="785" y="596" text-anchor="middle">High-occupancy cell segment</text>
+  <text class="tiny heavyText" x="785" y="626" text-anchor="middle">Partition → dynamically claim</text>
+  <text class="tiny heavyText" x="785" y="653" text-anchor="middle">Subtask partial moments</text>
+  <text class="tiny heavyText" x="785" y="680" text-anchor="middle">Second-level merge</text>
+  <path class="arrow" d="M902 560 H917"/>
+
+  <!-- drag heat -->
+  <rect class="particle" x="930" y="510" width="145" height="100" rx="6"/>
+  <text class="stageTitle particleText" x="1002" y="551" text-anchor="middle">Drag and heat transfer</text>
+  <text class="small particleText" x="1002" y="581" text-anchor="middle">Particle threads</text>
+  <path class="arrow" d="M1082 560 H1097"/>
+
+  <!-- tracking -->
+  <rect class="particle" x="1110" y="510" width="165" height="100" rx="6"/>
+  <text class="stageTitle particleText" x="1192" y="551" text-anchor="middle">Unstructured-mesh tracking</text>
+  <text class="stageTitle particleText" x="1192" y="580" text-anchor="middle">Tracking</text>
+  <path class="arrow" d="M1282 560 H1297"/>
+
+  <!-- CP-CST build 2 -->
+  <rect class="directory" x="1310" y="415" width="205" height="320" rx="7"/>
+  <text class="stageTitle directoryText" x="1412" y="447" text-anchor="middle">Post-migration CP-CST</text>
+  <rect class="ordinary" x="1327" y="470" width="171" height="58" rx="4"/>
+  <text class="small directoryText" x="1412" y="495" text-anchor="middle">Warp aggregation</text>
+  <text class="small directoryText" x="1412" y="516" text-anchor="middle">Counting</text>
+  <path class="reuseArrow" d="M1412 532 V548"/>
+  <rect class="ordinary" x="1327" y="555" width="171" height="58" rx="4"/>
+  <text class="label directoryText" x="1412" y="590" text-anchor="middle">Prefix sum</text>
+  <path class="reuseArrow" d="M1412 617 V633"/>
+  <rect class="ordinary" x="1327" y="640" width="171" height="70" rx="4"/>
+  <text class="small directoryText" x="1412" y="666" text-anchor="middle">Warp aggregation</text>
+  <text class="small directoryText" x="1412" y="688" text-anchor="middle">Segmented-index write</text>
+  <path class="arrow" d="M1522 560 H1537"/>
+
+  <!-- fused moment reduction -->
+  <rect class="particle" x="1550" y="415" width="220" height="320" rx="7"/>
+  <text class="stageTitle particleText" x="1660" y="447" text-anchor="middle">Fused multi-moment recovery</text>
+  <rect class="ordinary" x="1565" y="477" width="190" height="75" rx="4"/>
+  <text class="small directoryText" x="1660" y="505" text-anchor="middle">Regular cell segment</text>
+  <text class="small" x="1660" y="532" text-anchor="middle">Direct block reduction</text>
+  <rect class="heavy" x="1565" y="570" width="190" height="135" rx="4"/>
+  <text class="small heavyText" x="1660" y="596" text-anchor="middle">High-occupancy cell segment</text>
+  <text class="tiny heavyText" x="1660" y="626" text-anchor="middle">Partition → dynamically claim</text>
+  <text class="tiny heavyText" x="1660" y="653" text-anchor="middle">Subtask partial moments</text>
+  <text class="tiny heavyText" x="1660" y="680" text-anchor="middle">Second-level merge</text>
+  <path class="arrow" d="M1777 560 H1792"/>
+
+  <!-- pressure second half -->
+  <rect class="particle" x="1805" y="510" width="130" height="100" rx="6"/>
+  <text class="stageTitle particleText" x="1870" y="553" text-anchor="middle">Pressure</text>
+  <text class="small particleText" x="1870" y="582" text-anchor="middle">Second half-step</text>
+
+  <!-- compact stage -->
+  <path class="arrow" d="M1942 560 H1972"/>
+  <rect class="particle" x="1985" y="510" width="170" height="100" rx="6"/>
+  <text class="stageTitle particleText" x="2070" y="553" text-anchor="middle">Particle compaction</text>
+  <text class="small particleText" x="2070" y="582" text-anchor="middle">Cell-order reordering</text>
+
+  <!-- directory reuse bands -->
+  <rect class="directory" x="270" y="840" width="625" height="105" rx="7"/>
+  <text class="stageTitle directoryText" x="300" y="874">Reuse pre-migration directory</text>
+  <text class="small" x="300" y="906">Pressure first half-step · Poisson collision-pool reduction</text>
+  <path class="reuseArrow" d="M575 840 V620"/>
+  <path class="reuseArrow" d="M785 840 V745"/>
+
+  <rect class="directory" x="1310" y="840" width="815" height="105" rx="7"/>
+  <text class="stageTitle directoryText" x="1340" y="874">Reuse post-migration directory</text>
+  <text class="small" x="1340" y="906">Fused multi-moment recovery · Pressure second half-step · Particle compaction</text>
+  <path class="reuseArrow" d="M1660 840 V745"/>
+  <path class="reuseArrow" d="M1820 840 V620"/>
+  <path class="reuseArrow" d="M2070 840 V620"/>
+
+  <path class="guide" d="M1192 618 V985"/>
+  <text class="small" x="1192" y="1012" text-anchor="middle">Face crossing changes cell ownership; the post-migration directory replaces the pre-migration directory</text>
+
+  <!-- output boundary -->
+  <path class="arrow" d="M2107 205 H2230"/>
+  <path class="arrow" d="M2162 560 H2230"/>
+  <rect class="neutral" x="2245" y="150" width="125" height="770" rx="8"/>
+  <text class="stageTitle" x="2307" y="320" text-anchor="middle">Output time</text>
+  <text class="small" x="2307" y="360" text-anchor="middle">GPU</text>
+  <path class="arrow" d="M2307 380 V450"/>
+  <text class="small" x="2307" y="485" text-anchor="middle">CPU</text>
+  <line class="guide" x1="2270" y1="540" x2="2345" y2="540"/>
+  <text class="small" x="2307" y="585" text-anchor="middle">Other stages</text>
+  <text class="small" x="2307" y="618" text-anchor="middle">Data remains</text>
+  <text class="small" x="2307" y="651" text-anchor="middle">resident on the GPU</text>
+
+  <!-- compact legend -->
+  <rect class="gas" x="80" y="1060" width="42" height="26" rx="3"/>
+  <text class="small" x="135" y="1080">GKS computation</text>
+  <rect class="particle" x="270" y="1060" width="42" height="26" rx="3"/>
+  <text class="small" x="325" y="1080">Particle operators</text>
+  <rect class="directory" x="465" y="1060" width="42" height="26" rx="3"/>
+  <text class="small" x="520" y="1080">CP-CST construction and directory reuse</text>
+  <rect class="ordinary" x="780" y="1060" width="42" height="26" rx="3"/>
+  <text class="small" x="835" y="1080">Regular-cell path</text>
+  <rect class="heavy" x="1040" y="1060" width="42" height="26" rx="3"/>
+  <text class="small" x="1095" y="1080">High-occupancy-cell path</text>
+</svg>

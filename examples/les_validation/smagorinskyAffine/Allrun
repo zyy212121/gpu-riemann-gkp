@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+case_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)/scripts/openfoam10-env.sh"
+set -euo pipefail
+cd "${case_dir}"
+
+./Allclean
+python3 prepare_affine_fields.py
+blockMesh > log.blockMesh 2>&1
+/usr/bin/time -f 'elapsed_seconds=%e' -o runtime.solver \
+    GpuGkp > log.solver 2>&1
+PYTHONDONTWRITEBYTECODE=1 python3 check_affine_nut.py
+PYTHONDONTWRITEBYTECODE=1 python3 postprocess.py

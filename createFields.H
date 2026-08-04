@@ -1,0 +1,283 @@
+#ifndef createFields_H
+#define createFields_H
+
+#include "readGpuGasConfiguration.H"
+
+Switch solveParticleTemperature
+(
+    ugkwpProps.lookupOrDefault<Switch>
+    (
+        "particleTemperatureTransport",
+        gksProps.lookupOrDefault<Switch>
+        (
+            "particleTemperatureTransport",
+            gksProps.lookupOrDefault<Switch>
+            (
+                "solveParticleTemperature",
+                Switch(false)
+            )
+        )
+    )
+);
+
+if (solveParticleTemperature)
+{
+    if
+    (
+        !ugkwpProps.found("particleRho")
+     && !gksProps.found("particleRho")
+    )
+    {
+        FatalErrorInFunction
+            << "particleTemperatureTransport=true requires particleRho in "
+            << "constant/ugkwpProperties."
+            << exit(FatalError);
+    }
+    if
+    (
+        !ugkwpProps.found("particleCp")
+     && !gksProps.found("particleCp")
+    )
+    {
+        FatalErrorInFunction
+            << "particleTemperatureTransport=true requires particleCp in "
+            << "constant/ugkwpProperties."
+            << exit(FatalError);
+    }
+}
+
+dimensionedScalar particleThermalRho
+(
+    "particleRho",
+    dimensionSet(1, -3, 0, 0, 0, 0, 0),
+    solveParticleTemperature
+  ? (
+        ugkwpProps.found("particleRho")
+      ? readScalar(ugkwpProps.lookup("particleRho"))
+      : readScalar(gksProps.lookup("particleRho"))
+    )
+  : scalar(0)
+);
+
+dimensionedScalar particleCp
+(
+    "particleCp",
+    dimensionSet(0, 2, -2, -1, 0, 0, 0),
+    solveParticleTemperature
+  ? (
+        ugkwpProps.found("particleCp")
+      ? readScalar(ugkwpProps.lookup("particleCp"))
+      : readScalar(gksProps.lookup("particleCp"))
+    )
+  : scalar(0)
+);
+
+dimensionedScalar TpMin
+(
+    "TpMin",
+    dimTemperature,
+    ugkwpProps.lookupOrDefault<scalar>
+    (
+        "particleTMin",
+        gksProps.lookupOrDefault<scalar>("particleTMin", 300.0)
+    )
+);
+
+dimensionedScalar TpMax
+(
+    "TpMax",
+    dimTemperature,
+    ugkwpProps.lookupOrDefault<scalar>
+    (
+        "particleTMax",
+        gksProps.lookupOrDefault<scalar>("particleTMax", 5000.0)
+    )
+);
+
+dimensionedScalar rhoS
+(
+    "rhoS",
+    dimensionSet(1, -3, 0, 0, 0, 0, 0),
+    ugkwpProps.lookupOrDefault<scalar>("rhoS", 2500.0)
+);
+
+dimensionedScalar dS
+(
+    "dS",
+    dimensionSet(0, 1, 0, 0, 0, 0, 0),
+    ugkwpProps.lookupOrDefault<scalar>("dS", 1.0e-3)
+);
+
+dimensionedScalar parcelMass
+(
+    "parcelMass",
+    dimensionSet(1, 0, 0, 0, 0, 0, 0),
+    ugkwpProps.lookupOrDefault<scalar>("parcelMass", 1.0e-9)
+);
+
+if (!finiteScalar(rhoS.value()) || rhoS.value() <= SMALL)
+{
+    FatalErrorInFunction
+        << "ugkwpProperties: rhoS must be positive. Current rhoS = "
+        << rhoS.value() << exit(FatalError);
+}
+
+if (!finiteScalar(dS.value()) || dS.value() <= SMALL)
+{
+    FatalErrorInFunction
+        << "ugkwpProperties: dS must be positive. Current dS = "
+        << dS.value() << exit(FatalError);
+}
+
+if (!finiteScalar(parcelMass.value()) || parcelMass.value() <= SMALL)
+{
+    FatalErrorInFunction
+        << "ugkwpProperties: parcelMass must be positive. Current parcelMass = "
+        << parcelMass.value() << exit(FatalError);
+}
+
+volVectorField U
+(
+    IOobject("U", runTime.timeName(), mesh, IOobject::MUST_READ, IOobject::AUTO_WRITE),
+    mesh
+);
+
+volScalarField p
+(
+    IOobject("p", runTime.timeName(), mesh, IOobject::MUST_READ, IOobject::AUTO_WRITE),
+    mesh
+);
+
+volScalarField Tgas
+(
+    IOobject
+    (
+        "T",
+        runTime.timeName(),
+        mesh,
+        IOobject::MUST_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh
+);
+
+volScalarField rho
+(
+    IOobject
+    (
+        "rho",
+        runTime.timeName(),
+        mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::AUTO_WRITE
+    ),
+    p/(max(Tgas, TgasMinG)*Rgas)
+);
+
+volScalarField epsS
+(
+    IOobject("epsilonS", runTime.timeName(), mesh, IOobject::MUST_READ, IOobject::AUTO_WRITE),
+    mesh
+);
+
+volVectorField Us
+(
+    IOobject("Us", runTime.timeName(), mesh, IOobject::MUST_READ, IOobject::AUTO_WRITE),
+    mesh
+);
+
+volScalarField theta
+(
+    IOobject("theta", runTime.timeName(), mesh, IOobject::MUST_READ, IOobject::AUTO_WRITE),
+    mesh
+);
+
+volScalarField nut
+(
+    IOobject
+    (
+        "nut",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar
+    (
+        "zeroNut",
+        dimensionSet(0, 2, -1, 0, 0, 0, 0),
+        scalar(0)
+    ),
+    zeroGradientFvPatchScalarField::typeName
+);
+
+volVectorField rhoU
+(
+    IOobject("rhoU", runTime.timeName(), mesh, IOobject::READ_IF_PRESENT, IOobject::AUTO_WRITE),
+    rho*U
+);
+
+volScalarField rhoE
+(
+    IOobject("rhoE", runTime.timeName(), mesh, IOobject::READ_IF_PRESENT, IOobject::AUTO_WRITE),
+    p/(gammaG - 1.0) + rho*(0.5*magSqr(U))
+);
+
+volVectorField rhoUs
+(
+    IOobject("rhoUs", runTime.timeName(), mesh, IOobject::READ_IF_PRESENT, IOobject::AUTO_WRITE),
+    epsS*rhoS*Us
+);
+
+volScalarField rhoEs
+(
+    IOobject("rhoEs", runTime.timeName(), mesh, IOobject::READ_IF_PRESENT, IOobject::AUTO_WRITE),
+    epsS*rhoS*(0.5*magSqr(Us) + 1.5*theta)
+);
+
+volScalarField rhoDs
+(
+    IOobject("rhoDs", runTime.timeName(), mesh, IOobject::READ_IF_PRESENT, IOobject::AUTO_WRITE),
+    epsS*rhoS*dS
+);
+
+volScalarField dMeanCell
+(
+    IOobject("dMeanCell", runTime.timeName(), mesh, IOobject::READ_IF_PRESENT, IOobject::AUTO_WRITE),
+    rhoDs/(epsS*rhoS + dimensionedScalar("smallRhoForD", dimDensity, SMALL))
+);
+
+autoPtr<volScalarField> TpPtr;
+if (solveParticleTemperature)
+{
+    TpPtr.reset
+    (
+        new volScalarField
+        (
+            IOobject("Tp", runTime.timeName(), mesh, IOobject::MUST_READ, IOobject::AUTO_WRITE),
+            mesh
+        )
+    );
+}
+else
+{
+    TpPtr.reset
+    (
+        new volScalarField
+        (
+            IOobject("Tp", runTime.timeName(), mesh, IOobject::NO_READ, IOobject::NO_WRITE),
+            Tgas
+        )
+    );
+}
+
+volScalarField& Tp = TpPtr();
+
+volScalarField rhoHp
+(
+    IOobject("rhoHp", runTime.timeName(), mesh, IOobject::NO_READ, IOobject::NO_WRITE),
+    epsS*particleThermalRho*particleCp*Tp
+);
+
+#endif

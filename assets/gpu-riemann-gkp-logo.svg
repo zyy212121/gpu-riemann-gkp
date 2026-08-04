@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 320" role="img" aria-labelledby="title desc">
+  <title id="title">GPU–Riemann–GKP</title>
+  <desc id="desc">A GPU mesh cell, a Riemann wave, and particle trajectories form the GPU–Riemann–GKP solver mark.</desc>
+  <rect width="1500" height="320" rx="28" fill="#ffffff"/>
+  <g transform="translate(42 34)">
+    <path d="M42 126 104 20h122l62 106-62 106H104z" fill="#102A43"/>
+    <path d="M104 20 164 126 226 20M42 126h246M104 232l60-106 62 106" fill="none" stroke="#D9E2EC" stroke-width="5"/>
+    <path d="M20 134c36-60 68 60 104 0s68 60 104 0 68 60 104 0" fill="none" stroke="#C44E52" stroke-width="12" stroke-linecap="round"/>
+    <g fill="#1B998B" stroke="#ffffff" stroke-width="4">
+      <circle cx="64" cy="84" r="12"/>
+      <circle cx="132" cy="168" r="12"/>
+      <circle cx="211" cy="91" r="12"/>
+      <circle cx="276" cy="175" r="12"/>
+    </g>
+    <path d="M64 84c30 8 41 74 68 84 36 13 43-70 79-77 30-5 43 75 65 84" fill="none" stroke="#1B998B" stroke-width="6" stroke-dasharray="9 10"/>
+  </g>
+  <g transform="translate(410 68)">
+    <text x="0" y="98" fill="#102A43" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="92" font-weight="750" letter-spacing="2">GPU–RIEMANN–GKP</text>
+    <text x="4" y="158" fill="#486581" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="30" font-weight="500" letter-spacing="5">RIEMANN GAS · KINETIC PARTICLES · CP-CST</text>
+    <g transform="translate(4 192)">
+      <rect width="230" height="42" rx="21" fill="#E8F1F8"/>
+      <text x="115" y="28" text-anchor="middle" fill="#243B53" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="20" font-weight="650">OPENFOAM 10</text>
+      <rect x="248" width="190" height="42" rx="21" fill="#FDECEC"/>
+      <text x="343" y="28" text-anchor="middle" fill="#8F2630" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="20" font-weight="650">CUDA C++</text>
+      <rect x="456" width="255" height="42" rx="21" fill="#E5F7F4"/>
+      <text x="583.5" y="28" text-anchor="middle" fill="#136F63" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="20" font-weight="650">GPU RESIDENT</text>
+    </g>
+  </g>
+</svg>

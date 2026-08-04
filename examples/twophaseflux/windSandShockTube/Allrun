@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+case_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)/scripts/openfoam10-env.sh"
+set -euo pipefail
+cd "${case_dir}"
+
+read_dictionary_entry()
+{
+    local key="$1"
+    local file="$2"
+    awk -v key="${key}" '
+        $1 == key {
+            value = $2
+            sub(/;.*/, "", value)
+            print value
+            found = 1
+            exit
+        }
+        END { if (!found) exit 1 }
+    ' "${file}"
+}
+
+if [[ "${1:-}" == "--check" ]]; then
+    test -f reference/case_parameters.json
+    test -f reference/published/yang2022_collisionless_ugkwp.csv
+    test "$(read_dictionary_entry gpuResidentDragModel constant/ugkwpProperties)" = "constantResponseTime"
+    test "$(read_dictionary_entry gpuResidentHeatTransferModel constant/ugkwpProperties)" = "constantResponseTime"
+    read_dictionary_entry gpuResidentParticleResponseTime constant/ugkwpProperties >/dev/null
+    read_dictionary_entry gpuResidentParticleThermalResponseTime constant/ugkwpProperties >/dev/null
+    read_dictionary_entry gpuResidentGasHeatCapacity constant/ugkwpProperties >/dev/null
+    PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile postprocess.py
+    bash -n Allwmake Allrestore Allclean
+    ./Allwmake --check
+    echo "配置检查通过：windSandShockTube；未编译、未运行。"
+    exit 0
+fi
+[[ $# -eq 0 ]] || { echo "用法：./Allrun [--check]" >&2; exit 2; }
+./Allclean
+restored=false
+restore_backend() { if [[ "${restored}" == false ]]; then ./Allrestore; restored=true; fi; }
+trap restore_backend EXIT
+./Allwmake
+export GPU26_CUDA_BACKEND="${FOAM_USER_APPBIN}/gpu26CudaBackend"
+export GPU26_VALIDATION_PARTICLE_RESPONSE_TIME="$(read_dictionary_entry gpuResidentParticleResponseTime constant/ugkwpProperties)"
+export GPU26_VALIDATION_THERMAL_RESPONSE_TIME="$(read_dictionary_entry gpuResidentParticleThermalResponseTime constant/ugkwpProperties)"
+export GPU26_VALIDATION_GAS_HEAT_CAPACITY="$(read_dictionary_entry gpuResidentGasHeatCapacity constant/ugkwpProperties)"
+blockMesh > log.blockMesh 2>&1
+/usr/bin/time -f 'elapsed_seconds=%e' -o runtime.gpu2.6 \
+    "${FOAM_USER_APPBIN}/GpuGkp" > log.gpu2.6 2>&1
+PYTHONDONTWRITEBYTECODE=1 python3 postprocess.py
+restore_backend
+trap - EXIT

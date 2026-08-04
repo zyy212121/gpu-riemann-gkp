@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+case_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)/scripts/openfoam10-env.sh"
+set -euo pipefail
+cd "${case_dir}"
+
+initial_time="$(foamDictionary system/controlDict -entry startTime -value | tr -d '[:space:]')"
+for time_dir in [0-9]*; do
+    [[ -d "${time_dir}" ]] || continue
+    [[ "${time_dir}" == "${initial_time}" ]] && continue
+    [[ "${time_dir}" =~ ^[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?$ ]] || continue
+    rm -rf -- "${time_dir}"
+done
+rm -rf -- constant/polyMesh
+rm -f -- log.blockMesh log.setFields log.solver runtime.solver \
+    check_sod.json validation_data.csv 验证结果.png

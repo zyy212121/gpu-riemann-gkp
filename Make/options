@@ -1,0 +1,12 @@
+EXE_INC = \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/OpenFOAM/lnInclude \
+    -I. \
+    -Igpu \
+    $(UGKWP_CUDA_EXE_INC)
+
+EXE_LIBS = \
+    -lfiniteVolume \
+    -lmeshTools \
+    -lOpenFOAM

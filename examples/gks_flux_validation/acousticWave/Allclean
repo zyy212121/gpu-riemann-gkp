@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+case_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -euo pipefail
+for cells in 50 100 200; do
+    child="${case_root}/N${cells}"
+    find "${child}" -maxdepth 1 -mindepth 1 -type d \
+        -regextype posix-extended \
+        -regex '.*/[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?' \
+        ! -name 0 -exec rm -rf -- {} +
+    rm -rf -- "${child}/constant/polyMesh"
+    rm -f -- "${child}/log.blockMesh" "${child}/log.solver" \
+        "${child}/runtime.solver"
+done
+rm -f -- "${case_root}/check_acoustic.json" \
+    "${case_root}/validation_data.csv" "${case_root}/验证结果.png"

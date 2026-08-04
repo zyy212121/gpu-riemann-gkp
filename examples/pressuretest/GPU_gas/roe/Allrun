@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+case_dir="$(cd "$(dirname "$0")" && pwd)"
+source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)/scripts/openfoam10-env.sh"
+set -euo pipefail
+
+frontend="${FOAM_USER_APPBIN}/GpuGkp"
+backend="${GPU26_CUDA_BACKEND:-${FOAM_USER_APPBIN}/gpu26CudaBackend}"
+
+test -x "${frontend}"
+test -x "${backend}"
+
+test -d "${case_dir}/0"
+test -f "${case_dir}/system/controlDict"
+
+latest_time="$(
+    find "${case_dir}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
+    | awk '/^[0-9]+([.][0-9]+)?$/ && $0 != "0" {print}' \
+    | sort -g \
+    | tail -n 1
+)"
+
+if
+    test -n "${latest_time}" \
+    && awk -v time="${latest_time}" \
+        'BEGIN {exit !(time >= 0.099)}'
+then
+    echo "SKIP $(basename "${case_dir}"): existing time ${latest_time}"
+    exit 0
+fi
+
+# An incomplete case is deliberately restarted from the clean zero state.
+foamListTimes -case "${case_dir}" -rm
+rm -f "${case_dir}"/log.* "${case_dir}"/runtime.*
+
+cd "${case_dir}"
+blockMesh > log.blockMesh 2>&1
+export GPU26_CUDA_BACKEND="${backend}"
+exec /usr/bin/time \
+    -f 'elapsed_seconds=%e' \
+    -o runtime.gpu \
+    "${frontend}" \
+    > log.gpu 2>&1

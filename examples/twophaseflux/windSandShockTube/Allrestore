@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+case_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+solver_root="$(git -C "${case_dir}" rev-parse --show-toplevel)"
+"${solver_root}/scripts/select-packaged-backend.sh" production "${case_dir}"

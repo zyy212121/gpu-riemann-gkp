@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560" role="img" aria-labelledby="title desc">
+  <title id="title">GPU–Riemann–GKP architecture</title>
+  <desc id="desc">OpenFOAM case input feeds Riemann gas dynamics, GKP particle evolution, and CP-CST data orchestration inside a GPU-resident time step.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#627D98"/>
+    </marker>
+  </defs>
+  <rect width="1600" height="560" fill="#ffffff"/>
+  <text x="800" y="52" text-anchor="middle" fill="#102A43" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="34" font-weight="750">GPU–Riemann–GKP Solver Architecture</text>
+
+  <g transform="translate(55 105)">
+    <rect width="300" height="300" rx="24" fill="#F4F7FA" stroke="#9FB3C8" stroke-width="3"/>
+    <text x="150" y="48" text-anchor="middle" fill="#243B53" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="25" font-weight="700">OpenFOAM Case</text>
+    <g fill="#ffffff" stroke="#BCCCDC" stroke-width="2">
+      <rect x="38" y="78" width="224" height="48" rx="10"/>
+      <rect x="38" y="140" width="224" height="48" rx="10"/>
+      <rect x="38" y="202" width="224" height="48" rx="10"/>
+    </g>
+    <g text-anchor="middle" fill="#486581" font-family="JetBrains Mono,Consolas,monospace" font-size="19">
+      <text x="150" y="109">0/ fields</text>
+      <text x="150" y="171">constant/ properties</text>
+      <text x="150" y="233">system/ controls</text>
+    </g>
+    <text x="150" y="278" text-anchor="middle" fill="#627D98" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">mesh · boundaries · restart · output</text>
+  </g>
+
+  <path d="M375 255h82" stroke="#627D98" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <g transform="translate(470 88)">
+    <rect width="1075" height="350" rx="30" fill="#F8FAFC" stroke="#486581" stroke-width="3"/>
+    <text x="537.5" y="48" text-anchor="middle" fill="#334E68" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" letter-spacing="3">GPU-RESIDENT TIME STEP</text>
+
+    <g transform="translate(45 82)">
+      <rect width="292" height="190" rx="22" fill="#FFF2F2" stroke="#C44E52" stroke-width="4"/>
+      <path d="M34 74c32-42 60 42 92 0s60 42 92 0 46 22 52 10" fill="none" stroke="#C44E52" stroke-width="7" stroke-linecap="round"/>
+      <text x="146" y="126" text-anchor="middle" fill="#8F2630" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27" font-weight="750">Riemann Gas</text>
+      <text x="146" y="157" text-anchor="middle" fill="#A4464F" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">flux · reconstruction · viscosity</text>
+    </g>
+
+    <path d="M357 177h66" stroke="#627D98" stroke-width="5" marker-end="url(#arrow)"/>
+
+    <g transform="translate(438 82)">
+      <rect width="292" height="190" rx="22" fill="#ECF8F6" stroke="#1B998B" stroke-width="4"/>
+      <g fill="#1B998B">
+        <circle cx="69" cy="70" r="11"/>
+        <circle cx="119" cy="51" r="9"/>
+        <circle cx="164" cy="76" r="12"/>
+        <circle cx="220" cy="53" r="10"/>
+      </g>
+      <path d="M61 87c43 28 80-19 112 5 34 25 54-8 76 11" fill="none" stroke="#1B998B" stroke-width="5" stroke-dasharray="8 8"/>
+      <text x="146" y="126" text-anchor="middle" fill="#136F63" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27" font-weight="750">GKP Particles</text>
+      <text x="146" y="157" text-anchor="middle" fill="#2A8175" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">transport · collision · coupling</text>
+    </g>
+
+    <path d="M750 177h66" stroke="#627D98" stroke-width="5" marker-end="url(#arrow)"/>
+
+    <g transform="translate(831 82)">
+      <rect width="199" height="190" rx="22" fill="#EEF3F8" stroke="#486581" stroke-width="4"/>
+      <g transform="translate(43 25)" fill="#D9E2EC" stroke="#486581" stroke-width="2">
+        <rect width="26" height="26" rx="5"/><rect x="39" width="26" height="26" rx="5"/><rect x="78" width="26" height="26" rx="5"/>
+        <rect y="39" width="26" height="26" rx="5"/><rect x="39" y="39" width="26" height="26" rx="5"/><rect x="78" y="39" width="26" height="26" rx="5"/>
+      </g>
+      <text x="99.5" y="132" text-anchor="middle" fill="#243B53" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27" font-weight="750">CP-CST</text>
+      <text x="99.5" y="157" text-anchor="middle" fill="#486581" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">bin · fuse · reduce</text>
+    </g>
+
+    <path d="M180 291v24h750v-24" fill="none" stroke="#9FB3C8" stroke-width="4"/>
+    <text x="555" y="336" text-anchor="middle" fill="#627D98" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="18">shared mesh, fields, particle SoA, random state, source ledgers, and restart state</text>
+  </g>
+
+  <path d="M1000 455v45H310v-67" fill="none" stroke="#627D98" stroke-width="5" marker-end="url(#arrow)"/>
+  <text x="670" y="522" text-anchor="middle" fill="#486581" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19">write-time field mirror and particle restart</text>
+</svg>

@@ -1,0 +1,24 @@
+FoamFile { version 2.0; format ascii; class dictionary; location "constant"; object gksProperties; }
+gamma 1.4;
+R 287;
+mu 0.1;
+Pr 0.72;
+rhoMin 1e-12;
+particleTemperatureTransport false;
+gasNumerics
+{
+    flux                    hllc;
+    reconstruction          MUSCL;
+    limiter                 barthJespersen;
+    timeIntegrator          SSPRK2;
+    robustFallback          true;
+}
+turbulence
+{
+    model laminar;
+    lesDeltaCoeff 1.0;
+    turbulentPrandtl 0.9;
+    Cw 0.325;
+    Cs 0.17;
+    maxDiffusionNumber 0.25;
+}

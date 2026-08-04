@@ -1,0 +1,38 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      gksProperties;
+}
+
+gamma 1.3999999999999999;
+R 287;
+mu 0.01;
+Pr 0.72;
+rhoMin 1e-12;
+gasKappa -1;
+gasNumerics
+{
+    flux hllKurganov;
+    reconstruction MUSCL;
+    limiter barthJespersen;
+    timeIntegrator SSPRK2;
+    robustFallback true;
+    entropyFixCoefficient 0.1;
+}
+turbulence
+{
+    model laminar;
+    lesDeltaCoeff 1.0;
+    turbulentPrandtl 0.9;
+    Cw 0.325;
+    Cs 0.17;
+    maxDiffusionNumber 0.25;
+}
+particleTemperatureTransport false;
+particleRho 1000;
+particleCp 1;
+particleTMin 1e-8;
+particleTMax 1e4;

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+suite_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -euo pipefail
+for case_name in dustyBox dustyWave windSandShockTube; do
+    "${suite_dir}/${case_name}/Allclean"
+done
+echo "已清理三个两相流验证案例的生成结果。"

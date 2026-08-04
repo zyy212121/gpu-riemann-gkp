@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+case_dir="$(cd "$(dirname "$0")" && pwd)"
+source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)/scripts/openfoam10-env.sh"
+set -euo pipefail
+
+foamListTimes -case "${case_dir}" -rm
+rm -rf \
+    "${case_dir}/postProcessing" \
+    "${case_dir}/VTK"
+rm -f \
+    "${case_dir}"/log.* \
+    "${case_dir}"/runtime.*

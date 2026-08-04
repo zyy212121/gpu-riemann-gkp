@@ -1,0 +1,44 @@
+GPU-Riemann-GKP — GPU-Resident Riemann-GKP Solver
+Copyright (c) 2026 the respective GPU-Riemann-GKP contributors.
+
+DISTRIBUTION SCOPE
+
+This distribution contains the OpenFOAM frontend source, the public
+frontend/backend process protocol, an executable-only CUDA numerical backend,
+build metadata, documentation, and runnable example cases. Release examples
+contain their minimum runnable case state together with scripts and reference
+inputs required by Allrun.
+
+CUDA kernel source, CUDA backend server source, CUDA objects, static backend
+libraries, backend build logs, runtime logs, calculated time directories, and
+post-processing products remain in their respective private build or local run
+environments.
+
+LICENCE BOUNDARY
+
+The public OpenFOAM frontend source is distributed under GPL-3.0-only. See
+LICENSE for the complete licence text. Source files derived from third-party
+GPL-covered code remain subject to their original copyright and licence
+notices.
+
+The precompiled CUDA backend is a separate executable communicating through
+the public process protocol. It is distributed under the executable-only terms
+in backend/BINARY-LICENSE.txt.
+
+OPENFOAM ATTRIBUTION
+
+This solver is designed for OpenFOAM 10 from the OpenFOAM Foundation.
+OpenFOAM is a registered trademark of OpenCFD Limited. This project is an
+independent contribution maintained by the GPU-Riemann-GKP contributors.
+
+THIRD-PARTY NUMERICAL FORMULA ATTRIBUTION
+
+The GPU2.6 Riemann gas-flux module expresses the Tadmor/Kurganov central
+fluxes in the unit-area form used by OpenFOAM 10 rhoCentralFoam. OpenFOAM is
+distributed under GPL-3.0-or-later; see the OpenFOAM source distribution for
+its copyright notices and complete licence terms.
+
+The HLLC wave estimates and star-state construction, and the Roe
+characteristic regularisation, are based on SU2 8.5.0 "Harrier". SU2 is
+Copyright 2012-2026 the SU2 contributors and is distributed under
+LGPL-2.1-or-later. See https://github.com/su2code/SU2 and its COPYING files.

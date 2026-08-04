@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+backend/linux-x86_64/gpu26CudaBackend binary
+backend/linux-x86_64/gpu26CudaBackend-twophaseflux-validation binary

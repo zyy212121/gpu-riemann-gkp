@@ -1,0 +1,16 @@
+{
+  "name": "DUSTYBOX",
+  "length": 1.0,
+  "n_cells": 100,
+  "rho_g": 1.0,
+  "rho_p": 0.1,
+  "rho_solid": 1000.0,
+  "diameter": 0.0001,
+  "viscosity": 0.01,
+  "gas_velocity_initial": 1.0,
+  "particle_velocity_initial": 0.0,
+  "analysis_cells": [
+    20,
+    80
+  ]
+}

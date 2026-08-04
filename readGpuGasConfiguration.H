@@ -1,0 +1,748 @@
+#ifndef readGpuGasConfiguration_H
+#define readGpuGasConfiguration_H
+
+// User-facing gas configuration follows OpenFOAM case semantics:
+//   physicalProperties  -> ideal-gas thermodynamics and molecular transport
+//   fvSchemes           -> flux, spatial reconstruction, and time integration
+//   fvSolution/GPU2_6   -> solver safeguards that are not discretisation
+//   momentumTransport   -> laminar/LES selection
+//
+// constant/gksProperties remains READ_IF_PRESENT only as a migration bridge
+// for historical GPU2.4--2.6 cases.  A converted case does not require it.
+IOdictionary gksProps
+(
+    IOobject
+    (
+        "gksProperties",
+        runTime.constant(),
+        mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::NO_WRITE
+    )
+);
+
+IOdictionary ugkwpProps
+(
+    IOobject
+    (
+        "ugkwpProperties",
+        runTime.constant(),
+        mesh,
+        IOobject::MUST_READ,
+        IOobject::NO_WRITE
+    )
+);
+
+IOdictionary physicalProperties
+(
+    IOobject
+    (
+        "physicalProperties",
+        runTime.constant(),
+        mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::NO_WRITE
+    )
+);
+
+IOdictionary momentumTransportProperties
+(
+    IOobject
+    (
+        "momentumTransport",
+        runTime.constant(),
+        mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::NO_WRITE
+    )
+);
+
+const dictionary& fvSchemesDict = mesh.schemes().dict();
+const dictionary& fvSolutionDict = mesh.solution().dict();
+const dictionary* gpuSolutionControls = nullptr;
+if (fvSolutionDict.found("GPU2_6"))
+{
+    gpuSolutionControls = &fvSolutionDict.subDict("GPU2_6");
+}
+
+const bool openFoamGasProperties = !physicalProperties.empty();
+scalar gammaGasValue = 0;
+scalar specificGasConstantValue = 0;
+scalar gasMuValue = 0;
+scalar gasPrValue = 0;
+
+if (openFoamGasProperties)
+{
+    const dictionary& thermoType =
+        physicalProperties.subDict("thermoType");
+    const word equationOfState(thermoType.lookup("equationOfState"));
+    const word thermoModel(thermoType.lookup("thermo"));
+    const word transportModel(thermoType.lookup("transport"));
+    const word energyVariable(thermoType.lookup("energy"));
+    if
+    (
+        equationOfState != "perfectGas"
+     || thermoModel != "hConst"
+     || transportModel != "const"
+     || energyVariable != "sensibleInternalEnergy"
+    )
+    {
+        FatalErrorInFunction
+            << "GPU2.6 currently supports the OpenFOAM thermo combination "
+            << "equationOfState=perfectGas, thermo=hConst, transport=const, "
+            << "energy=sensibleInternalEnergy. Current thermoType is "
+            << thermoType << exit(FatalError);
+    }
+
+    const dictionary& mixture = physicalProperties.subDict("mixture");
+    const dictionary& specie = mixture.subDict("specie");
+    const dictionary& thermodynamics =
+        mixture.subDict("thermodynamics");
+    const dictionary& transport = mixture.subDict("transport");
+    const scalar molWeight = readScalar(specie.lookup("molWeight"));
+    const scalar gasCp = readScalar(thermodynamics.lookup("Cp"));
+    gasMuValue = readScalar(transport.lookup("mu"));
+    gasPrValue = readScalar(transport.lookup("Pr"));
+    specificGasConstantValue =
+        constant::physicoChemical::RR.value()/molWeight;
+    const scalar gasCv = gasCp - specificGasConstantValue;
+    gammaGasValue = gasCp/gasCv;
+
+    if
+    (
+        !finiteScalar(molWeight)
+     || molWeight <= SMALL
+     || !finiteScalar(gasCp)
+     || gasCv <= SMALL
+    )
+    {
+        FatalErrorInFunction
+            << "physicalProperties requires positive molWeight and Cp > R. "
+            << "molWeight=" << molWeight << ", Cp=" << gasCp
+            << ", R=" << specificGasConstantValue << exit(FatalError);
+    }
+}
+else
+{
+    if (gksProps.empty())
+    {
+        FatalErrorInFunction
+            << "Missing constant/physicalProperties. Historical cases may "
+            << "temporarily use constant/gksProperties, but new GPU2.6 "
+            << "cases must use OpenFOAM physicalProperties."
+            << exit(FatalError);
+    }
+    WarningInFunction
+        << "Using deprecated gas thermodynamics from "
+        << "constant/gksProperties. Migrate to physicalProperties."
+        << endl;
+    gammaGasValue = gksProps.lookupOrDefault<scalar>("gamma", 1.4);
+    specificGasConstantValue =
+        gksProps.lookupOrDefault<scalar>("R", 287.0);
+    gasMuValue = gksProps.lookupOrDefault<scalar>("mu", 0.0);
+    gasPrValue = gksProps.lookupOrDefault<scalar>("Pr", 0.4);
+}
+
+const scalar rhoMinValue =
+    gpuSolutionControls
+  ? gpuSolutionControls->lookupOrDefault<scalar>("rhoMin", 1.0e-12)
+  : gksProps.lookupOrDefault<scalar>("rhoMin", 1.0e-12);
+const scalar gasTMinValue =
+    gpuSolutionControls
+  ? gpuSolutionControls->lookupOrDefault<scalar>("TMin", SMALL)
+  : ugkwpProps.lookupOrDefault<scalar>("TgasMin", SMALL);
+
+dimensionedScalar gammaG("gamma", dimless, gammaGasValue);
+dimensionedScalar Rgas
+(
+    "R",
+    dimensionSet(0, 2, -2, -1, 0, 0, 0),
+    specificGasConstantValue
+);
+dimensionedScalar muG
+(
+    "mu",
+    dimensionSet(1, -1, -1, 0, 0, 0, 0),
+    gasMuValue
+);
+dimensionedScalar PrG("Pr", dimless, gasPrValue);
+dimensionedScalar rhoMinG
+(
+    "rhoMin",
+    dimensionSet(1, -3, 0, 0, 0, 0, 0),
+    rhoMinValue
+);
+dimensionedScalar TgasMinG("TMin", dimTemperature, gasTMinValue);
+
+if
+(
+    !finiteScalar(gammaG.value())
+ || gammaG.value() <= scalar(1) + SMALL
+ || gammaG.value() > scalar(5.0/3.0)
+)
+{
+    FatalErrorInFunction
+        << "Gas gamma must be in (1, 5/3]. Current gamma = "
+        << gammaG.value() << exit(FatalError);
+}
+if (!finiteScalar(Rgas.value()) || Rgas.value() <= SMALL)
+{
+    FatalErrorInFunction
+        << "Gas R must be positive. Current R = "
+        << Rgas.value() << exit(FatalError);
+}
+if (!finiteScalar(rhoMinG.value()) || rhoMinG.value() <= SMALL)
+{
+    FatalErrorInFunction
+        << "fvSolution/GPU2_6 rhoMin must be positive. Current rhoMin = "
+        << rhoMinG.value() << exit(FatalError);
+}
+if (!finiteScalar(TgasMinG.value()) || TgasMinG.value() <= scalar(0))
+{
+    FatalErrorInFunction
+        << "fvSolution/GPU2_6 TMin must be positive. Current TMin = "
+        << TgasMinG.value() << exit(FatalError);
+}
+if (!finiteScalar(muG.value()) || muG.value() < scalar(0))
+{
+    FatalErrorInFunction
+        << "physicalProperties mu must be non-negative. Current mu = "
+        << muG.value() << exit(FatalError);
+}
+if (!finiteScalar(PrG.value()) || PrG.value() <= SMALL)
+{
+    FatalErrorInFunction
+        << "physicalProperties Pr must be positive. Current Pr = "
+        << PrG.value() << exit(FatalError);
+}
+
+const bool openFoamGasNumerics = fvSchemesDict.found("fluxScheme");
+// A case without the legacy gksProperties bridge must be represented solely
+// by standard OpenFOAM fvPatchField semantics.
+const bool strictOpenFoamGasBoundaries = gksProps.empty();
+word gasFluxSchemeName("Kurganov");
+word gasReconstructionName("firstOrder");
+word gasLimiterName("none");
+word gasTimeIntegratorName("Euler");
+Switch gasRobustFallback(true);
+
+if (openFoamGasNumerics)
+{
+    fvSchemesDict.readIfPresent("fluxScheme", gasFluxSchemeName);
+    const dictionary& ddtSchemes =
+        fvSchemesDict.subDict("ddtSchemes");
+    ITstream ddtScheme(ddtSchemes.lookup("default"));
+    ddtScheme >> gasTimeIntegratorName;
+    if (ddtScheme.nRemainingTokens() != 0)
+    {
+        FatalErrorInFunction
+            << "ddtSchemes/default must contain one explicit time scheme "
+            << "(Euler, SSPRK2 or SSPRK3)."
+            << exit(FatalError);
+    }
+
+    const dictionary& gradSchemes =
+        fvSchemesDict.subDict("gradSchemes");
+    ITstream gradDefault(gradSchemes.lookup("default"));
+    word gradIntegration;
+    word gradInterpolation;
+    gradDefault >> gradIntegration >> gradInterpolation;
+    if
+    (
+        gradIntegration != "Gauss"
+     || gradInterpolation != "linear"
+     || gradDefault.nRemainingTokens() != 0
+    )
+    {
+        FatalErrorInFunction
+            << "GPU2.6 currently requires gradSchemes/default "
+            << "'Gauss linear' because that is the resident Green-Gauss "
+            << "operator implemented on the GPU."
+            << exit(FatalError);
+    }
+
+    const dictionary& interpolationSchemes =
+        fvSchemesDict.subDict("interpolationSchemes");
+    ITstream interpolationDefault
+    (
+        interpolationSchemes.lookup("default")
+    );
+    word defaultInterpolation;
+    interpolationDefault >> defaultInterpolation;
+    if
+    (
+        defaultInterpolation != "linear"
+     || interpolationDefault.nRemainingTokens() != 0
+    )
+    {
+        FatalErrorInFunction
+            << "GPU2.6 currently requires "
+            << "interpolationSchemes/default 'linear'."
+            << exit(FatalError);
+    }
+
+    const dictionary& snGradSchemes =
+        fvSchemesDict.subDict("snGradSchemes");
+    ITstream snGradDefault(snGradSchemes.lookup("default"));
+    word defaultSnGrad;
+    snGradDefault >> defaultSnGrad;
+    if
+    (
+        defaultSnGrad != "corrected"
+     || snGradDefault.nRemainingTokens() != 0
+    )
+    {
+        FatalErrorInFunction
+            << "GPU2.6 currently requires snGradSchemes/default "
+            << "'corrected'."
+            << exit(FatalError);
+    }
+
+    const dictionary& laplacianSchemes =
+        fvSchemesDict.subDict("laplacianSchemes");
+    ITstream laplacianDefault(laplacianSchemes.lookup("default"));
+    word laplacianIntegration;
+    word laplacianInterpolation;
+    word laplacianCorrection;
+    laplacianDefault
+        >> laplacianIntegration
+        >> laplacianInterpolation
+        >> laplacianCorrection;
+    if
+    (
+        laplacianIntegration != "Gauss"
+     || laplacianInterpolation != "linear"
+     || laplacianCorrection != "corrected"
+     || laplacianDefault.nRemainingTokens() != 0
+    )
+    {
+        FatalErrorInFunction
+            << "GPU2.6 currently requires laplacianSchemes/default "
+            << "'Gauss linear corrected'."
+            << exit(FatalError);
+    }
+
+    const dictionary& divSchemes =
+        fvSchemesDict.subDict("divSchemes");
+    auto readDivInterpolation =
+        [&divSchemes]
+        (
+            const word& entryName,
+            scalar& coefficient
+        ) -> word
+        {
+            ITstream scheme(divSchemes.lookup(entryName));
+            word integration;
+            word interpolation;
+            scheme >> integration >> interpolation;
+            if (integration != "Gauss")
+            {
+                FatalErrorInFunction
+                    << entryName << " must use Gauss integration; found "
+                    << integration << exit(FatalError);
+            }
+            coefficient = scalar(1);
+            if
+            (
+                interpolation == "limitedLinear"
+             && scheme.nRemainingTokens() > 0
+            )
+            {
+                scheme >> coefficient;
+            }
+            if (scheme.nRemainingTokens() != 0)
+            {
+                FatalErrorInFunction
+                    << entryName << " contains unsupported trailing "
+                    << "scheme coefficients." << exit(FatalError);
+            }
+            return interpolation;
+        };
+
+    scalar uCoefficient = 1;
+    scalar eCoefficient = 1;
+    scalar kCoefficient = 1;
+    scalar pByRhoCoefficient = 1;
+    const word divU =
+        readDivInterpolation("div(phi,U)", uCoefficient);
+    const word divE =
+        readDivInterpolation("div(phi,e)", eCoefficient);
+    const word divK =
+        readDivInterpolation("div(phi,K)", kCoefficient);
+    const word divPByRho =
+        readDivInterpolation
+        (
+            "div(phi,(p|rho))",
+            pByRhoCoefficient
+        );
+    scalar viscousCoefficient = 1;
+    const word divViscous =
+        readDivInterpolation
+        (
+            "div(((rho*nuEff)*dev2(T(grad(U)))))",
+            viscousCoefficient
+        );
+    if (divViscous != "linear")
+    {
+        FatalErrorInFunction
+            << "GPU2.6 currently requires "
+            << "div(((rho*nuEff)*dev2(T(grad(U))))) 'Gauss linear'."
+            << exit(FatalError);
+    }
+
+    const bool momentumUpwind = divU == "upwind";
+    const bool energyUpwind =
+        divE == "upwind"
+     && divK == "upwind"
+     && divPByRho == "upwind";
+    const bool energyLimitedLinear =
+        divE == "limitedLinear"
+     && divK == "limitedLinear"
+     && divPByRho == "limitedLinear"
+     && mag(eCoefficient - scalar(1)) <= SMALL
+     && mag(kCoefficient - scalar(1)) <= SMALL
+     && mag(pByRhoCoefficient - scalar(1)) <= SMALL;
+
+    if (momentumUpwind && energyUpwind)
+    {
+        gasReconstructionName = "firstOrder";
+    }
+    else if (momentumUpwind && energyLimitedLinear)
+    {
+        gasReconstructionName = "energyLimitedLinear";
+    }
+    else
+    {
+        FatalErrorInFunction
+            << "Unsupported OpenFOAM divSchemes combination. The verified "
+            << "GPU path currently accepts Gauss upwind for div(phi,U), "
+            << "with either Gauss upwind or Gauss limitedLinear 1 for all "
+            << "of div(phi,e), div(phi,K), and div(phi,(p|rho))."
+            << exit(FatalError);
+    }
+
+    if (gpuSolutionControls)
+    {
+        gasRobustFallback =
+            gpuSolutionControls->lookupOrDefault<Switch>
+            (
+                "robustFallback",
+                true
+            );
+    }
+}
+else
+{
+    if (!gksProps.found("gasNumerics"))
+    {
+        FatalErrorInFunction
+            << "system/fvSchemes must define top-level fluxScheme. "
+            << "Historical cases may temporarily use "
+            << "gksProperties/gasNumerics."
+            << exit(FatalError);
+    }
+    WarningInFunction
+        << "Using deprecated gasNumerics from gksProperties. Migrate flux "
+        << "and time/spatial schemes to system/fvSchemes."
+        << endl;
+    const dictionary& gasNumericsDict = gksProps.subDict("gasNumerics");
+    gasFluxSchemeName =
+        gasNumericsDict.lookupOrDefault<word>("flux", "hllKurganov");
+    gasReconstructionName =
+        gasNumericsDict.lookupOrDefault<word>
+        (
+            "reconstruction",
+            "firstOrder"
+        );
+    gasLimiterName =
+        gasNumericsDict.lookupOrDefault<word>
+        (
+            "limiter",
+            "barthJespersen"
+        );
+    gasTimeIntegratorName =
+        gasNumericsDict.lookupOrDefault<word>
+        (
+            "timeIntegrator",
+            "Euler"
+        );
+    gasRobustFallback =
+        gasNumericsDict.lookupOrDefault<Switch>("robustFallback", true);
+}
+
+label gasFluxScheme = -1;
+if
+(
+    gasFluxSchemeName == "Tadmor"
+ || gasFluxSchemeName == "rusanovTadmor"
+ || gasFluxSchemeName == "rusanov"
+ || gasFluxSchemeName == "tadmor"
+)
+{
+    gasFluxScheme = 1;
+}
+else if
+(
+    gasFluxSchemeName == "Kurganov"
+ || gasFluxSchemeName == "hllKurganov"
+ || gasFluxSchemeName == "hll"
+ || gasFluxSchemeName == "kurganov"
+)
+{
+    gasFluxScheme = 2;
+}
+else if (gasFluxSchemeName == "HLLE" || gasFluxSchemeName == "hlle")
+{
+    gasFluxScheme = 3;
+}
+else if (gasFluxSchemeName == "HLLC" || gasFluxSchemeName == "hllc")
+{
+    gasFluxScheme = 4;
+}
+else if (gasFluxSchemeName == "Roe" || gasFluxSchemeName == "roe")
+{
+    gasFluxScheme = 5;
+}
+else if (gasFluxSchemeName == "HLLEM" || gasFluxSchemeName == "hllem")
+{
+    gasFluxScheme = 6;
+}
+else if
+(
+    gasFluxSchemeName == "HLLC-ADC"
+ || gasFluxSchemeName == "hllcAdc"
+ || gasFluxSchemeName == "hllcADC"
+)
+{
+    gasFluxScheme = 7;
+}
+else if (gasFluxSchemeName == "SLAU2" || gasFluxSchemeName == "slau2")
+{
+    gasFluxScheme = 8;
+}
+else if
+(
+    gasFluxSchemeName == "SLAU2.2"
+ || gasFluxSchemeName == "slau2_2"
+ || gasFluxSchemeName == "slau22"
+)
+{
+    gasFluxScheme = 9;
+}
+else
+{
+    FatalErrorInFunction
+        << "Unsupported fvSchemes fluxScheme '" << gasFluxSchemeName
+        << "'. Valid values are Tadmor, Kurganov, HLLE, HLLC, Roe, "
+        << "HLLEM, HLLC-ADC, SLAU2 and SLAU2.2."
+        << exit(FatalError);
+}
+
+label gasReconstruction = -1;
+if (gasReconstructionName == "firstOrder")
+{
+    gasReconstruction = 0;
+}
+else if (gasReconstructionName == "MUSCL")
+{
+    gasReconstruction = 1;
+}
+else if (gasReconstructionName == "energyLimitedLinear")
+{
+    gasReconstruction = 2;
+}
+else
+{
+    FatalErrorInFunction
+        << "Unsupported gas reconstruction '" << gasReconstructionName
+        << "'." << exit(FatalError);
+}
+label gasLimiter = -1;
+if (gasLimiterName == "none")
+{
+    gasLimiter = 0;
+}
+else if (gasLimiterName == "barthJespersen")
+{
+    gasLimiter = 1;
+}
+else if (gasLimiterName == "venkatakrishnan")
+{
+    gasLimiter = 2;
+}
+else
+{
+    FatalErrorInFunction
+        << "Unsupported gas limiter '" << gasLimiterName << "'."
+        << exit(FatalError);
+}
+
+label gasTimeIntegrator = -1;
+if (gasTimeIntegratorName == "Euler")
+{
+    gasTimeIntegrator = 1;
+}
+else if (gasTimeIntegratorName == "SSPRK2")
+{
+    gasTimeIntegrator = 2;
+}
+else if (gasTimeIntegratorName == "SSPRK3")
+{
+    gasTimeIntegrator = 3;
+}
+else
+{
+    FatalErrorInFunction
+        << "Unsupported ddtSchemes/default '" << gasTimeIntegratorName
+        << "'. Valid values for this explicit GPU solver are Euler, "
+        << "SSPRK2 and SSPRK3." << exit(FatalError);
+}
+
+if (!gasRobustFallback && gasFluxScheme >= 4)
+{
+    FatalErrorInFunction
+        << "fvSolution/GPU2_6 robustFallback must remain true for "
+        << "contact-resolving and AUSM-family fluxes."
+        << exit(FatalError);
+}
+
+// Reserved protocol slot. Roe's transonic entropy correction is automatic.
+const scalar gasEntropyFixCoefficient = scalar(0);
+
+word gasTurbulenceModelName("laminar");
+scalar lesDeltaCoeff = scalar(1);
+scalar turbulentPrandtl = scalar(0.9);
+scalar waleCw = scalar(0.325);
+scalar smagorinskyCs = scalar(0.17);
+
+if (!momentumTransportProperties.empty())
+{
+    const word simulationType
+    (
+        momentumTransportProperties.lookupOrDefault<word>
+        (
+            "simulationType",
+            "laminar"
+        )
+    );
+    if (simulationType == "laminar")
+    {
+        gasTurbulenceModelName = "laminar";
+    }
+    else if (simulationType == "LES")
+    {
+        const dictionary& les =
+            momentumTransportProperties.subDict("LES");
+        gasTurbulenceModelName = word(les.lookup("model"));
+        const dictionary deltaCoeffs =
+            les.subOrEmptyDict("cubeRootVolCoeffs");
+        lesDeltaCoeff =
+            deltaCoeffs.lookupOrDefault<scalar>("deltaCoeff", scalar(1));
+        const dictionary modelCoeffs =
+            les.subOrEmptyDict(gasTurbulenceModelName + "Coeffs");
+        waleCw = modelCoeffs.lookupOrDefault<scalar>("Cw", waleCw);
+        smagorinskyCs =
+            modelCoeffs.lookupOrDefault<scalar>("Cs", smagorinskyCs);
+    }
+    else
+    {
+        FatalErrorInFunction
+            << "momentumTransport simulationType '" << simulationType
+            << "' is unsupported. Valid values are laminar and LES."
+            << exit(FatalError);
+    }
+}
+else if (gksProps.found("turbulence"))
+{
+    const dictionary& gasTurbulenceDict =
+        gksProps.subDict("turbulence");
+    gasTurbulenceModelName = word(gasTurbulenceDict.lookup("model"));
+    lesDeltaCoeff =
+        gasTurbulenceDict.lookupOrDefault<scalar>
+        (
+            "lesDeltaCoeff",
+            scalar(1)
+        );
+    turbulentPrandtl =
+        gasTurbulenceDict.lookupOrDefault<scalar>
+        (
+            "turbulentPrandtl",
+            scalar(0.9)
+        );
+    waleCw =
+        gasTurbulenceDict.lookupOrDefault<scalar>("Cw", scalar(0.325));
+    smagorinskyCs =
+        gasTurbulenceDict.lookupOrDefault<scalar>("Cs", scalar(0.17));
+}
+
+const scalar maxDiffusionNumber =
+    gpuSolutionControls
+  ? gpuSolutionControls->lookupOrDefault<scalar>
+    (
+        "maxDiffusionNumber",
+        scalar(0.25)
+    )
+  : (
+        gksProps.found("turbulence")
+      ? gksProps.subDict("turbulence").lookupOrDefault<scalar>
+        (
+            "maxDiffusionNumber",
+            scalar(0.25)
+        )
+      : scalar(0.25)
+    );
+
+label gasTurbulenceModel = -1;
+if (gasTurbulenceModelName == "laminar")
+{
+    gasTurbulenceModel = 0;
+}
+else if (gasTurbulenceModelName == "WALE")
+{
+    gasTurbulenceModel = 1;
+}
+else if (gasTurbulenceModelName == "Smagorinsky")
+{
+    gasTurbulenceModel = 2;
+}
+else
+{
+    FatalErrorInFunction
+        << "Unsupported momentumTransport LES model '"
+        << gasTurbulenceModelName
+        << "'. Valid values are WALE and Smagorinsky."
+        << exit(FatalError);
+}
+
+if (!finiteScalar(lesDeltaCoeff) || lesDeltaCoeff <= SMALL)
+{
+    FatalErrorInFunction
+        << "LES deltaCoeff must be finite and positive."
+        << exit(FatalError);
+}
+if (!finiteScalar(turbulentPrandtl) || turbulentPrandtl <= SMALL)
+{
+    FatalErrorInFunction
+        << "Turbulent Prandtl number must be finite and positive."
+        << exit(FatalError);
+}
+if (!finiteScalar(waleCw) || waleCw < scalar(0))
+{
+    FatalErrorInFunction
+        << "WALE Cw must be finite and non-negative."
+        << exit(FatalError);
+}
+if (!finiteScalar(smagorinskyCs) || smagorinskyCs < scalar(0))
+{
+    FatalErrorInFunction
+        << "Smagorinsky Cs must be finite and non-negative."
+        << exit(FatalError);
+}
+if (!finiteScalar(maxDiffusionNumber) || maxDiffusionNumber <= SMALL)
+{
+    FatalErrorInFunction
+        << "fvSolution/GPU2_6 maxDiffusionNumber must be positive."
+        << exit(FatalError);
+}
+
+#endif

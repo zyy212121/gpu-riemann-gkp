@@ -1,0 +1,29 @@
+{
+  "name": "wind-sand shock tube",
+  "source": "Yang et al., Communications in Computational Physics 31 (2022) 669-706",
+  "source_doi": "10.4208/cicp.OA-2021-0153",
+  "length": 1.0,
+  "n_cells": 100,
+  "final_time": 0.2,
+  "gas_left": {
+    "rho": 1.0,
+    "u": 0.0,
+    "p": 1.0
+  },
+  "gas_right": {
+    "rho": 0.125,
+    "u": 0.0,
+    "p": 0.1
+  },
+  "solid_apparent_density": 0.5,
+  "solid_pressure": 0.75,
+  "particle_fluctuation_dimensions": 1,
+  "particle_temperature_left": 1.0,
+  "particle_temperature_right": 0.8,
+  "response_time": 0.2,
+  "thermal_response_time": 0.1,
+  "particle_heat_capacity": 0.1,
+  "gas_heat_capacity": 0.2,
+  "gamma": 1.4,
+  "particle_count": 200000
+}

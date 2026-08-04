@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+suite_dir="${root_dir}/cp_cst_test"
+
+if [[ ! -x "${suite_dir}/Allrun.sparse" || ! -x "${suite_dir}/Allrun.dense_e1" ]]; then
+    echo "ERROR: incomplete cp_cst_test runtime-switch suite." >&2
+    exit 1
+fi
+
+echo "Running the current GPU2.6 CP-CST runtime-switch acceptance suite."
+echo "Existing result guards inside the suite remain active."
+"${suite_dir}/Allrun.sparse"
+"${suite_dir}/Allrun.dense_e1"

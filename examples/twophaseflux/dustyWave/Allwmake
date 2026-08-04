@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+case_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+solver_root="$(git -C "${case_dir}" rev-parse --show-toplevel)"
+
+if [[ "${1:-}" == "--check" ]]; then
+    [[ $# -eq 1 ]] || { printf 'Usage: ./Allwmake [--check]\n' >&2; exit 2; }
+    "${solver_root}/scripts/select-packaged-backend.sh" --check twophaseflux-validation
+    exit 0
+fi
+
+[[ $# -eq 0 ]] || { printf 'Usage: ./Allwmake [--check]\n' >&2; exit 2; }
+"${solver_root}/scripts/select-packaged-backend.sh" \
+    twophaseflux-validation "${case_dir}"
