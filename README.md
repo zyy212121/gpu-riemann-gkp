@@ -595,7 +595,7 @@ The packaged backend contains native CUDA code for Turing, Ampere, Ada, and Hopp
 ```bash
 mkdir -p "$WM_PROJECT_USER_DIR/applications/solvers"
 cd "$WM_PROJECT_USER_DIR/applications/solvers"
-git clone https://github.com/zyy212121/tcb-ugkp-openfoam-frontend.git GPU-Riemann-GKP
+git clone https://github.com/zyy212121/GPU-Riemann-GKP.git GPU-Riemann-GKP
 cd GPU-Riemann-GKP
 ./install.sh
 ```
@@ -869,10 +869,10 @@ GPU-Riemann-GKP/
 └── assets/                        # README visuals and validation figures
 ```
 
-The repository publishes the OpenFOAM frontend, public process protocol, runnable cases, and a precompiled CUDA backend. CUDA backend implementation source remains in the private development repository. The executable boundary keeps OpenFOAM libraries in `GpuGkp` and CUDA runtime code in `gpu26CudaBackend`.
+The repository publishes the GPL-3.0-or-later OpenFOAM frontend source, public process protocol, runnable cases, and a precompiled CUDA backend. CUDA backend implementation source remains in the private development repository. The separate executable boundary keeps OpenFOAM libraries in `GpuGkp` and CUDA runtime code in `gpu26CudaBackend`; the backend binary is governed by [`backend/BINARY-LICENSE.txt`](backend/BINARY-LICENSE.txt).
 
 The backend manifest is available in [`backend/manifest.txt`](backend/manifest.txt), and [`backend/SHA256SUMS`](backend/SHA256SUMS) provides the release checksum.
 
 ## Citation and license
 
-Citation metadata is available in [CITATION.cff](CITATION.cff). The public OpenFOAM frontend source uses GPL-3.0 terms. The executable-only CUDA backend uses the terms in [`backend/BINARY-LICENSE.txt`](backend/BINARY-LICENSE.txt). [NOTICE](NOTICE) records the distribution boundary and third-party attribution.
+Citation metadata is available in [CITATION.cff](CITATION.cff). The public OpenFOAM frontend source uses GPL-3.0-or-later terms. The executable-only CUDA backend uses the terms in [`backend/BINARY-LICENSE.txt`](backend/BINARY-LICENSE.txt). [NOTICE](NOTICE) records the distribution boundary and third-party attribution.

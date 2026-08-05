@@ -6,7 +6,7 @@ authors:
   - name: "GPU-Riemann-GKP Development Team"
 version: 2.6.0
 date-released: 2026-08-05
-license: GPL-3.0-only
+license: GPL-3.0-or-later
 keywords:
   - Riemann solver
   - gas-kinetic particle method

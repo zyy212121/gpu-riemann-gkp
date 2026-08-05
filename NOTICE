@@ -16,14 +16,16 @@ environments.
 
 LICENCE BOUNDARY
 
-The public OpenFOAM frontend source is distributed under GPL-3.0-only. See
+The public OpenFOAM frontend source is distributed under GPL-3.0-or-later. See
 LICENSE for the complete licence text. Source files derived from third-party
 GPL-covered code remain subject to their original copyright and licence
 notices.
 
-The precompiled CUDA backend is a separate executable communicating through
-the public process protocol. It is distributed under the executable-only terms
-in backend/BINARY-LICENSE.txt.
+The precompiled CUDA backend is distributed as a separate executable that
+communicates with the GPL frontend through the public process protocol and does
+not link against OpenFOAM libraries. Its permitted use and redistribution are
+governed by the executable-only terms in backend/BINARY-LICENSE.txt. CUDA
+backend implementation source is not part of this public distribution.
 
 OPENFOAM ATTRIBUTION
 
