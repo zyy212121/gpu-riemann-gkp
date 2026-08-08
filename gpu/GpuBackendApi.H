@@ -18,6 +18,7 @@ extern "C" int ugkwpGpuResidentStrictCreate
     double TpMax, int collisionalPressureEnabled,
     double collisionalRestitution, double pressureKickFraction,
     int jammingPressureEnabled, double packingFraction,
+    int packingProjectionIterations,
     double jammingOnset, double jammingPressureScale,
     double jammingRegularization,
     int gasFluxScheme, int gasReconstruction, int gasLimiter,
@@ -101,6 +102,45 @@ extern "C" int ugkwpGpuResidentStrictUploadFields
 extern "C" int ugkwpGpuResidentStrictAdvance
 (
     void* handle, double dt, double simulationTime
+);
+
+extern "C" int ugkwpGpuResidentStrictConfigureSst
+(
+    void* handle,
+    double alphaK1,
+    double alphaK2,
+    double alphaOmega1,
+    double alphaOmega2,
+    double beta1,
+    double beta2,
+    double betaStar,
+    double gamma1,
+    double gamma2,
+    double a1,
+    double b1,
+    double c1,
+    double kMin,
+    double omegaMin,
+    double maxSourceNumber,
+    int wallTreatment,
+    double wallKappa,
+    double wallE,
+    double wallCmu,
+    const double* k,
+    const double* omega,
+    const double* wallDistance,
+    const int* boundaryKMode,
+    const int* boundaryOmegaMode,
+    const double* boundaryK,
+    const double* boundaryOmega
+);
+
+extern "C" int ugkwpGpuResidentStrictDownloadSst
+(
+    void* handle,
+    double* k,
+    double* omega,
+    double* nut
 );
 
 extern "C" int ugkwpGpuResidentStrictComputeGasCourant

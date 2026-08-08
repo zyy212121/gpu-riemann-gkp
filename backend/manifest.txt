@@ -1,8 +1,8 @@
 GPU-Riemann-GKP CUDA backend binary manifest
 
-Backend executable: linux-x86_64/gpu26CudaBackend
-Validation executable: linux-x86_64/gpu26CudaBackend-twophaseflux-validation
-Frontend protocol: 3.0 (magic GU26)
+Backend executable: linux-x86_64/gpu28CudaBackend
+Validation executable: linux-x86_64/gpu28CudaBackend-twophaseflux-validation
+Frontend/backend compatibility interface: GU28 revision 3.2
 Build platform: Ubuntu 22.04, x86-64, glibc 2.34 minimum
 CUDA compiler: NVIDIA CUDA Toolkit 13.1, nvcc 13.1.115
 CUDA runtime: statically linked
@@ -12,7 +12,7 @@ Forward-compatible PTX target: compute_90
 OpenFOAM dynamic dependencies: none
 CUDA runtime dynamic dependencies: none
 
-The executable is intended to run beside the public GpuGkp frontend. The
+The executables are intended to run beside the public GpuGkp frontend. The
 frontend and backend communicate through the public process protocol in
 gpu/GpuBackendProtocol.H.
 

@@ -206,7 +206,7 @@ int finishNoPayload(ClientState* state)
 
 std::string backendExecutablePath()
 {
-    if (const char* configured = std::getenv("GPU26_CUDA_BACKEND"))
+    if (const char* configured = std::getenv("GPU28_CUDA_BACKEND"))
     {
         if (*configured != '\0')
         {
@@ -218,13 +218,13 @@ std::string backendExecutablePath()
     const ssize_t length = ::readlink("/proc/self/exe", executable, PATH_MAX);
     if (length <= 0)
     {
-        return "gpu26CudaBackend";
+        return "gpu28CudaBackend";
     }
     executable[length] = '\0';
     std::string path(executable);
     const std::size_t slash = path.find_last_of('/');
     return (slash == std::string::npos ? std::string() : path.substr(0, slash + 1))
-         + "gpu26CudaBackend";
+         + "gpu28CudaBackend";
 }
 
 bool spawnBackend(ClientState& state)
@@ -300,6 +300,7 @@ extern "C" int ugkwpGpuResidentStrictCreate
     double TpMax, int collisionalPressureEnabled,
     double collisionalRestitution, double pressureKickFraction,
     int jammingPressureEnabled, double packingFraction,
+    int packingProjectionIterations,
     double jammingOnset, double jammingPressureScale,
     double jammingRegularization,
     int gasFluxScheme, int gasReconstruction, int gasLimiter,
@@ -338,7 +339,7 @@ extern "C" int ugkwpGpuResidentStrictCreate
        || gasFluxScheme == static_cast<int>(GasFluxScheme::Hllem))
       && gasRobustFallback == 0)
      || turbulenceModel < static_cast<int>(TurbulenceModel::laminar)
-     || turbulenceModel > static_cast<int>(TurbulenceModel::Smagorinsky)
+     || turbulenceModel > static_cast<int>(TurbulenceModel::kOmegaSST)
      || !std::isfinite(gasEntropyFixCoefficient)
      || gasEntropyFixCoefficient < 0.0
      || !std::isfinite(lesDeltaCoeff)
@@ -361,16 +362,10 @@ extern "C" int ugkwpGpuResidentStrictCreate
      || (!csrCellLocalPathEnabled
       && (csrHeavyReductionEnabled || csrWarpAggregatedBinning))
      || (jammingPressureEnabled != 0 && jammingPressureEnabled != 1)
+     || packingProjectionIterations < 1
      || (jammingPressureEnabled != 0
       && (!std::isfinite(packingFraction)
-       || !std::isfinite(jammingOnset)
-       || !std::isfinite(jammingPressureScale)
-       || !std::isfinite(jammingRegularization)
-       || packingFraction <= 0.0 || packingFraction >= 1.0
-       || jammingOnset < 0.0 || jammingOnset >= packingFraction
-       || jammingPressureScale <= 0.0
-       || jammingRegularization <= 0.0
-       || jammingRegularization >= packingFraction - jammingOnset)))
+       || packingFraction <= 0.0 || packingFraction >= 1.0)))
     {
         return fail("invalid GPU backend create arguments");
     }
@@ -397,6 +392,7 @@ extern "C" int ugkwpGpuResidentStrictCreate
         TgasMin, epsSMin, thetaMin, TpMin, TpMax,
         collisionalPressureEnabled, collisionalRestitution,
         pressureKickFraction, jammingPressureEnabled, packingFraction,
+        packingProjectionIterations,
         jammingOnset, jammingPressureScale, jammingRegularization,
         gasFluxScheme, gasReconstruction, gasLimiter, gasTimeIntegrator,
         gasRobustFallback, turbulenceModel,
@@ -612,6 +608,119 @@ extern "C" int ugkwpGpuResidentStrictAdvance
     if (!startRequest(s, Op::advance, sizeof(args)) || !sendObject(s->fd, args))
         return -1;
     return finishNoPayload(s);
+}
+
+extern "C" int ugkwpGpuResidentStrictConfigureSst
+(
+    void* handle,
+    double alphaK1,
+    double alphaK2,
+    double alphaOmega1,
+    double alphaOmega2,
+    double beta1,
+    double beta2,
+    double betaStar,
+    double gamma1,
+    double gamma2,
+    double a1,
+    double b1,
+    double c1,
+    double kMin,
+    double omegaMin,
+    double maxSourceNumber,
+    int wallTreatment,
+    double wallKappa,
+    double wallE,
+    double wallCmu,
+    const double* k,
+    const double* omega,
+    const double* wallDistance,
+    const int* boundaryKMode,
+    const int* boundaryOmegaMode,
+    const double* boundaryK,
+    const double* boundaryOmega
+)
+{
+    ClientState* s = static_cast<ClientState*>(handle);
+    if
+    (
+        s == nullptr
+     || k == nullptr
+     || omega == nullptr
+     || wallDistance == nullptr
+     || boundaryKMode == nullptr
+     || boundaryOmegaMode == nullptr
+     || boundaryK == nullptr
+     || boundaryOmega == nullptr
+    )
+    {
+        return fail("invalid SST configuration request");
+    }
+
+    const SstConfigArgs args
+    {
+        alphaK1, alphaK2, alphaOmega1, alphaOmega2,
+        beta1, beta2, betaStar, gamma1, gamma2,
+        a1, b1, c1, kMin, omegaMin, maxSourceNumber,
+        wallTreatment, wallKappa, wallE, wallCmu
+    };
+    std::uint64_t bytes = sizeof(args);
+    if
+    (
+        !addArrays(bytes, s->nCells, sizeof(double), 3)
+     || !addArrays(bytes, s->nFaces, sizeof(int), 2)
+     || !addArrays(bytes, s->nFaces, sizeof(double), 2)
+     || !startRequest(s, Op::configureSst, bytes)
+     || !sendObject(s->fd, args)
+     || !sendArray(s->fd, k, s->nCells)
+     || !sendArray(s->fd, omega, s->nCells)
+     || !sendArray(s->fd, wallDistance, s->nCells)
+     || !sendArray(s->fd, boundaryKMode, s->nFaces)
+     || !sendArray(s->fd, boundaryOmegaMode, s->nFaces)
+     || !sendArray(s->fd, boundaryK, s->nFaces)
+     || !sendArray(s->fd, boundaryOmega, s->nFaces)
+    )
+    {
+        return -1;
+    }
+    return finishNoPayload(s);
+}
+
+extern "C" int ugkwpGpuResidentStrictDownloadSst
+(
+    void* handle,
+    double* k,
+    double* omega,
+    double* nut
+)
+{
+    ClientState* s = static_cast<ClientState*>(handle);
+    if (s == nullptr || k == nullptr || omega == nullptr || nut == nullptr)
+    {
+        return fail("invalid SST download request");
+    }
+    const std::uint64_t expected =
+        3ULL*static_cast<std::uint64_t>(s->nCells)*sizeof(double);
+    if (!startRequest(s, Op::downloadSst, 0))
+    {
+        return -1;
+    }
+    std::uint64_t payload = 0;
+    const int status = receiveResponse(s, payload, true, expected);
+    if (status != 0)
+    {
+        return status;
+    }
+    if
+    (
+        !receiveArray(s->fd, k, s->nCells)
+     || !receiveArray(s->fd, omega, s->nCells)
+     || !receiveArray(s->fd, nut, s->nCells)
+    )
+    {
+        return -1;
+    }
+    return 0;
 }
 
 extern "C" int ugkwpGpuResidentStrictComputeGasCourant

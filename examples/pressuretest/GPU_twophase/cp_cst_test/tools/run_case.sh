@@ -27,7 +27,7 @@ set -eu
 user_foam_root="$(cd "${solver_root}/../../.." && pwd)"
 export FOAM_USER_APPBIN="${FOAM_USER_APPBIN:-${user_foam_root}/platforms/${WM_OPTIONS}/bin}"
 frontend="${FOAM_USER_APPBIN}/GpuGkp"
-backend="${FOAM_USER_APPBIN}/gpu26CudaBackend"
+backend="${FOAM_USER_APPBIN}/gpu28CudaBackend"
 
 case "${level}" in
     l0)
@@ -74,8 +74,8 @@ require_value()
     fi
 }
 
-if pgrep -f '[d]iluteUgkwpFoam_GPU2_6|[g]pu26CudaBackend' >/dev/null; then
-    echo "ERROR: another GPU2.6 calculation is already running." >&2
+if pgrep -f '[d]iluteUgkwpFoam_GPU2_8|[g]pu26CudaBackend' >/dev/null; then
+    echo "ERROR: another GPU2.8 calculation is already running." >&2
     exit 1
 fi
 
@@ -113,7 +113,7 @@ if [[ -e log.gpu || -e runtime.gpu ]]; then
     exit 1
 fi
 
-export GPU26_CUDA_BACKEND="${backend}"
+export GPU28_CUDA_BACKEND="${backend}"
 
 echo "Starting ${group}/${level}: runtime CP-CST path=${expected_path}" >&2
 exec /usr/bin/time \

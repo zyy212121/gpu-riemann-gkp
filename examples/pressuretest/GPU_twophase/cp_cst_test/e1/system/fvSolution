@@ -17,7 +17,7 @@ solvers
     }
 }
 
-GPU2_6
+GPU2_8
 {
     rhoMin              1e-12;
     TMin                1;

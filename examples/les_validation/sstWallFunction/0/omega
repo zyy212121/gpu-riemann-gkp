@@ -1,0 +1,11 @@
+FoamFile { version 2.0; format ascii; class volScalarField; location "0"; object omega; }
+dimensions [0 0 -1 0 0 0 0];
+internalField uniform 10;
+boundaryField
+{
+    xMin { type symmetryPlane; }
+    xMax { type symmetryPlane; }
+    bottom { type omegaWallFunction; value uniform 100; }
+    top { type omegaWallFunction; value uniform 100; }
+    zEmpty { type empty; }
+}

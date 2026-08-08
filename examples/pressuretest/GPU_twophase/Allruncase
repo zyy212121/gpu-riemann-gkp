@@ -10,7 +10,7 @@ if [[ ! -x "${suite_dir}/Allrun.sparse" || ! -x "${suite_dir}/Allrun.dense_e1" ]
     exit 1
 fi
 
-echo "Running the current GPU2.6 CP-CST runtime-switch acceptance suite."
+echo "Running the current GPU2.8 CP-CST runtime-switch acceptance suite."
 echo "Existing result guards inside the suite remain active."
 "${suite_dir}/Allrun.sparse"
 "${suite_dir}/Allrun.dense_e1"

@@ -5,5 +5,5 @@
 *.jpeg binary
 *.gif binary
 *.pdf binary
-backend/linux-x86_64/gpu26CudaBackend binary
-backend/linux-x86_64/gpu26CudaBackend-twophaseflux-validation binary
+backend/linux-x86_64/gpu28CudaBackend binary
+backend/linux-x86_64/gpu28CudaBackend-twophaseflux-validation binary

@@ -1,0 +1,42 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      momentumTransport;
+}
+
+simulationType RAS;
+
+RAS
+{
+    model               kOmegaSST;
+    turbulence          on;
+    printCoeffs         on;
+    turbulentPrandtl    0.9;
+
+    kOmegaSSTCoeffs
+    {
+        wallTreatment   wallFunction;
+        wallKappa       0.41;
+        wallE           9.8;
+        wallCmu         0.09;
+        alphaK1         0.85;
+        alphaK2         1.0;
+        alphaOmega1     0.5;
+        alphaOmega2     0.856;
+        beta1           0.075;
+        beta2           0.0828;
+        betaStar        0.09;
+        gamma1          0.5555555555555556;
+        gamma2          0.44;
+        a1              0.31;
+        b1              1.0;
+        c1              10.0;
+        F3              false;
+        kMin            1e-12;
+        omegaMin        1e-6;
+        maxSourceNumber 0.25;
+    }
+}

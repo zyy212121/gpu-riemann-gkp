@@ -23,11 +23,11 @@ source "${repo_root}/scripts/openfoam10-env.sh"
 
 case "${variant}" in
     production)
-        packaged_name="gpu26CudaBackend"
+        packaged_name="gpu28CudaBackend"
         display_name="production"
         ;;
     twophaseflux-validation)
-        packaged_name="gpu26CudaBackend-twophaseflux-validation"
+        packaged_name="gpu28CudaBackend-twophaseflux-validation"
         display_name="two-phase flux validation"
         ;;
     *)
@@ -37,7 +37,7 @@ case "${variant}" in
 esac
 
 packaged_backend="${repo_root}/backend/linux-x86_64/${packaged_name}"
-installed_backend="${FOAM_USER_APPBIN}/gpu26CudaBackend"
+installed_backend="${FOAM_USER_APPBIN}/gpu28CudaBackend"
 
 (
     cd "${repo_root}/backend"
@@ -55,7 +55,7 @@ if [[ "${check_only}" == true ]]; then
     exit 0
 fi
 
-if pgrep -f '(^|/)GpuGkp([[:space:]]|$)|(^|/)gpu26CudaBackend([[:space:]]|$)' >/dev/null; then
+if pgrep -f '(^|/)GpuGkp([[:space:]]|$)|(^|/)gpu28CudaBackend([[:space:]]|$)' >/dev/null; then
     printf 'ERROR: a GPU-Riemann-GKP process is active; backend switch refused.\n' >&2
     exit 1
 fi
@@ -69,7 +69,7 @@ if [[ -n "${status_directory}" ]]; then
         printf '# Active GPU backend\n\n'
         printf -- '- Mode: `%s`\n' "${display_name}"
         printf -- '- SHA-256: `%s`\n' "$(sha256sum "${installed_backend}" | awk '{print $1}')"
-    } > "${status_directory}/ACTIVE_GPU26_BINARY.md"
+    } > "${status_directory}/ACTIVE_GPU28_BINARY.md"
 fi
 
 printf 'Installed %s backend: %s\n' "${display_name}" "${installed_backend}"

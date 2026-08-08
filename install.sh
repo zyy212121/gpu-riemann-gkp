@@ -5,8 +5,8 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${repo_root}/scripts/openfoam10-env.sh"
 
-backend_source="${repo_root}/backend/linux-x86_64/gpu26CudaBackend"
-backend_target="${FOAM_USER_APPBIN}/gpu26CudaBackend"
+backend_source="${repo_root}/backend/linux-x86_64/gpu28CudaBackend"
+backend_target="${FOAM_USER_APPBIN}/gpu28CudaBackend"
 frontend_target="${FOAM_USER_APPBIN}/GpuGkp"
 
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then

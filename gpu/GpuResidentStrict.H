@@ -60,6 +60,7 @@ extern "C" int ugkwpGpuResidentStrictCreate
     double pressureKickFraction,
     int jammingPressureEnabled,
     double packingFraction,
+    int packingProjectionIterations,
     double jammingOnset,
     double jammingPressureScale,
     double jammingRegularization,
@@ -337,6 +338,7 @@ protected:
     void* handle_;
     label hostMirrorCells_;
     label hostMirrorFaces_;
+    const fvMesh* residentMesh_;
     scalar parcelMass_;
 
 public:
@@ -345,6 +347,7 @@ public:
         handle_(nullptr),
         hostMirrorCells_(0),
         hostMirrorFaces_(0),
+        residentMesh_(nullptr),
         parcelMass_(0)
     {}
 
@@ -434,6 +437,7 @@ protected:
         }
         hostMirrorCells_ = nCells;
         hostMirrorFaces_ = nFaces;
+        residentMesh_ = &mesh;
         parcelMass_ = parcelMass;
 
         if (particleCapacity < 0)
@@ -499,30 +503,19 @@ protected:
                 "gpuResidentPackingFraction",
                 scalar(0.63)
             );
-        const scalar jammingOnset =
+        const label packingProjectionIterations =
             particleWallProps == nullptr
-          ? scalar(0.55)
-          : particleWallProps->lookupOrDefault<scalar>
+          ? label(20)
+          : particleWallProps->lookupOrDefault<label>
             (
-                "gpuResidentJammingOnset",
-                scalar(0.55)
+                "gpuResidentPackingProjectionIterations",
+                label(20)
             );
-        const scalar jammingPressureScale =
-            particleWallProps == nullptr
-          ? scalar(0.05)
-          : particleWallProps->lookupOrDefault<scalar>
-            (
-                "gpuResidentJammingPressureScale",
-                scalar(0.05)
-            );
-        const scalar jammingRegularization =
-            particleWallProps == nullptr
-          ? scalar(0.01)
-          : particleWallProps->lookupOrDefault<scalar>
-            (
-                "gpuResidentJammingRegularization",
-                scalar(0.01)
-            );
+        // ABI placeholders retained for GPU2.8 create payload.  The old
+        // onset/scale/regularization equation of state has been removed.
+        const scalar jammingOnset = scalar(0);
+        const scalar jammingPressureScale = scalar(1);
+        const scalar jammingRegularization = scalar(1);
 
         if
         (
@@ -551,24 +544,21 @@ protected:
         if
         (
             !finiteMirrorScalar(packingFraction)
-         || !finiteMirrorScalar(jammingOnset)
-         || !finiteMirrorScalar(jammingPressureScale)
-         || !finiteMirrorScalar(jammingRegularization)
          || packingFraction <= scalar(0)
          || packingFraction >= scalar(1)
-         || jammingOnset < scalar(0)
-         || jammingOnset >= packingFraction
-         || jammingPressureScale <= scalar(0)
-         || jammingRegularization <= scalar(0)
-         || jammingRegularization >= packingFraction - jammingOnset
         )
         {
             FatalErrorInFunction
-                << "Invalid GPU resident jamming-pressure parameters: "
+                << "Invalid GPU resident mobile packing-projection parameter: "
                 << "packingFraction=" << packingFraction
-                << ", onset=" << jammingOnset
-                << ", scale=" << jammingPressureScale
-                << ", regularization=" << jammingRegularization
+                << exit(FatalError);
+        }
+        if (packingProjectionIterations < 1)
+        {
+            FatalErrorInFunction
+                << "gpuResidentPackingProjectionIterations must be a "
+                << "positive integer. Current value = "
+                << packingProjectionIterations
                 << exit(FatalError);
         }
 
@@ -699,6 +689,7 @@ protected:
             pressureKickFraction,
             jammingPressureEnabled ? 1 : 0,
             packingFraction,
+            int(packingProjectionIterations),
             jammingOnset,
             jammingPressureScale,
             jammingRegularization,
@@ -872,6 +863,7 @@ protected:
         }
         hostMirrorCells_ = nCells;
         hostMirrorFaces_ = nFaces;
+        residentMesh_ = &mesh;
 
         if (maxFaceWalkHops <= 0)
         {
@@ -915,6 +907,7 @@ protected:
             scalar(0.25),
             0,
             scalar(0.63),
+            20,
             scalar(0.55),
             scalar(0.05),
             scalar(0.01),
@@ -957,6 +950,189 @@ protected:
     }
 
 public:
+    void configureSst
+    (
+        const fvMesh& mesh,
+        const volScalarField& k,
+        const volScalarField& omega,
+        const volScalarField& wallDistance,
+        const scalar alphaK1,
+        const scalar alphaK2,
+        const scalar alphaOmega1,
+        const scalar alphaOmega2,
+        const scalar beta1,
+        const scalar beta2,
+        const scalar betaStar,
+        const scalar gamma1,
+        const scalar gamma2,
+        const scalar a1,
+        const scalar b1,
+        const scalar c1,
+        const scalar kMin,
+        const scalar omegaMin,
+        const scalar maxSourceNumber,
+        const label wallTreatment,
+        const scalar wallKappa,
+        const scalar wallE,
+        const scalar wallCmu
+    )
+    {
+        requireInitialised("configure SST");
+        if
+        (
+            residentMesh_ != &mesh
+         || k.size() != mesh.nCells()
+         || omega.size() != mesh.nCells()
+         || wallDistance.size() != mesh.nCells()
+        )
+        {
+            FatalErrorInFunction
+                << "SST fields and wall distance must use the resident mesh."
+                << exit(FatalError);
+        }
+
+        labelList boundaryKMode(mesh.nFaces(), 0);
+        labelList boundaryOmegaMode(mesh.nFaces(), 0);
+        scalarField boundaryK(mesh.nFaces(), kMin);
+        scalarField boundaryOmega(mesh.nFaces(), omegaMin);
+        forAll(mesh.boundary(), patchI)
+        {
+            const polyPatch& patch = mesh.boundaryMesh()[patchI];
+            const fvPatchScalarField& kPatch = k.boundaryField()[patchI];
+            const fvPatchScalarField& omegaPatch =
+                omega.boundaryField()[patchI];
+
+            const bool kInletOutlet =
+                isA<inletOutletFvPatchScalarField>(kPatch);
+            const bool omegaInletOutlet =
+                isA<inletOutletFvPatchScalarField>(omegaPatch);
+            const inletOutletFvPatchScalarField* kIo = kInletOutlet
+              ? &refCast<const inletOutletFvPatchScalarField>(kPatch)
+              : nullptr;
+            const inletOutletFvPatchScalarField* omegaIo = omegaInletOutlet
+              ? &refCast<const inletOutletFvPatchScalarField>(omegaPatch)
+              : nullptr;
+
+            forAll(patch, patchFaceI)
+            {
+                const label faceI = patch.start() + patchFaceI;
+                if (isA<wallPolyPatch>(patch))
+                {
+                    boundaryKMode[faceI] = wallTreatment == 0 ? 1 : 0;
+                    boundaryOmegaMode[faceI] = 1;
+                    boundaryK[faceI] =
+                        wallTreatment == 0 ? scalar(0) : kMin;
+                    boundaryOmega[faceI] = wallTreatment == 0
+                      ? max(omegaPatch[patchFaceI], omegaMin)
+                      : omegaMin;
+                    continue;
+                }
+
+                if (kInletOutlet)
+                {
+                    boundaryKMode[faceI] = 2;
+                    boundaryK[faceI] = max(kIo->refValue()[patchFaceI], kMin);
+                }
+                else if (kPatch.fixesValue())
+                {
+                    boundaryKMode[faceI] = 1;
+                    boundaryK[faceI] = max(kPatch[patchFaceI], kMin);
+                }
+
+                if (omegaInletOutlet)
+                {
+                    boundaryOmegaMode[faceI] = 2;
+                    boundaryOmega[faceI] = max
+                    (
+                        omegaIo->refValue()[patchFaceI],
+                        omegaMin
+                    );
+                }
+                else if (omegaPatch.fixesValue())
+                {
+                    boundaryOmegaMode[faceI] = 1;
+                    boundaryOmega[faceI] = max
+                    (
+                        omegaPatch[patchFaceI],
+                        omegaMin
+                    );
+                }
+            }
+        }
+
+        check
+        (
+            ugkwpGpuResidentStrictConfigureSst
+            (
+                handle_,
+                alphaK1,
+                alphaK2,
+                alphaOmega1,
+                alphaOmega2,
+                beta1,
+                beta2,
+                betaStar,
+                gamma1,
+                gamma2,
+                a1,
+                b1,
+                c1,
+                kMin,
+                omegaMin,
+                maxSourceNumber,
+                int(wallTreatment),
+                wallKappa,
+                wallE,
+                wallCmu,
+                k.primitiveField().begin(),
+                omega.primitiveField().begin(),
+                wallDistance.primitiveField().begin(),
+                boundaryKMode.begin(),
+                boundaryOmegaMode.begin(),
+                boundaryK.begin(),
+                boundaryOmega.begin()
+            ),
+            "configure GPU resident explicit SST"
+        );
+    }
+
+    void downloadSstToHostMirror
+    (
+        const Time& runTime,
+        volScalarField& k,
+        volScalarField& omega,
+        volScalarField& nut
+    )
+    {
+        requireInitialised("download SST fields");
+        if (!runTime.writeTime())
+        {
+            FatalErrorInFunction
+                << "SST fields may only be downloaded at writeTime()."
+                << exit(FatalError);
+        }
+        scalarField kValues(hostMirrorCells_);
+        scalarField omegaValues(hostMirrorCells_);
+        scalarField nutValues(hostMirrorCells_);
+        check
+        (
+            ugkwpGpuResidentStrictDownloadSst
+            (
+                handle_,
+                kValues.begin(),
+                omegaValues.begin(),
+                nutValues.begin()
+            ),
+            "download GPU resident explicit SST"
+        );
+        validateMirrorScalar("k", kValues);
+        validateMirrorScalar("omega", omegaValues);
+        validateMirrorScalar("nut", nutValues);
+        assignScalar(k, kValues);
+        assignScalar(omega, omegaValues);
+        assignScalar(nut, nutValues);
+    }
+
     scalar computeGasCourant
     (
         const scalar dt,
@@ -2261,7 +2437,7 @@ protected:
             if (pp.coupled())
             {
                 FatalErrorInFunction
-                    << "GPU2.6 is a serial resident solver and does not "
+                    << "GPU2.8 is a serial resident solver and does not "
                     << "implement coupled boundary transport. Patch '"
                     << pp.name() << "' has type '" << pp.type() << "'."
                     << exit(FatalError);
@@ -2413,7 +2589,7 @@ protected:
                 {
                     FatalErrorInFunction
                         << "OpenFOAM wall patch requires noSlip or fixedValue U"
-                        << " in GPU2.6. Patch '" << pp.name()
+                        << " in GPU2.8. Patch '" << pp.name()
                         << "' uses U type '"
                         << U.boundaryField()[patchI].type() << "'."
                         << exit(FatalError);
@@ -2442,7 +2618,7 @@ protected:
                         << rho.boundaryField()[patchI].type()
                         << ", p=" << p.boundaryField()[patchI].type()
                         << ", T=" << Tgas.boundaryField()[patchI].type()
-                        << ". GPU2.6 wall support is p zeroGradient, rho "
+                        << ". GPU2.8 wall support is p zeroGradient, rho "
                         << "zeroGradient/calculated, and T "
                         << "fixedValue/zeroGradient."
                         << exit(FatalError);

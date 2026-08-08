@@ -212,6 +212,55 @@ volScalarField nut
     zeroGradientFvPatchScalarField::typeName
 );
 
+IOobject kFieldHeader
+(
+    "k",
+    runTime.timeName(),
+    mesh,
+    IOobject::READ_IF_PRESENT,
+    IOobject::NO_WRITE,
+    false
+);
+IOobject omegaFieldHeader
+(
+    "omega",
+    runTime.timeName(),
+    mesh,
+    IOobject::READ_IF_PRESENT,
+    IOobject::NO_WRITE,
+    false
+);
+if
+(
+    gasTurbulenceModel == 3
+ && (!kFieldHeader.headerOk() || !omegaFieldHeader.headerOk())
+)
+{
+    FatalErrorInFunction
+        << "kOmegaSST requires readable volScalarField files k and omega "
+        << "at time " << runTime.timeName() << exit(FatalError);
+}
+
+volScalarField k
+(
+    IOobject("k", runTime.timeName(), mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::AUTO_WRITE),
+    mesh,
+    dimensionedScalar("k0", dimensionSet(0, 2, -2, 0, 0, 0, 0), sstKMin),
+    zeroGradientFvPatchScalarField::typeName
+);
+
+volScalarField omega
+(
+    IOobject("omega", runTime.timeName(), mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::AUTO_WRITE),
+    mesh,
+    dimensionedScalar("omega0", dimless/dimTime, sstOmegaMin),
+    zeroGradientFvPatchScalarField::typeName
+);
+
 volVectorField rhoU
 (
     IOobject("rhoU", runTime.timeName(), mesh, IOobject::READ_IF_PRESENT, IOobject::AUTO_WRITE),

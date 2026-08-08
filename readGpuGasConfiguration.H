@@ -4,7 +4,7 @@
 // User-facing gas configuration follows OpenFOAM case semantics:
 //   physicalProperties  -> ideal-gas thermodynamics and molecular transport
 //   fvSchemes           -> flux, spatial reconstruction, and time integration
-//   fvSolution/GPU2_6   -> solver safeguards that are not discretisation
+//   fvSolution/GPU2_8   -> solver safeguards that are not discretisation
 //   momentumTransport   -> laminar/LES selection
 //
 // constant/gksProperties remains READ_IF_PRESENT only as a migration bridge
@@ -60,7 +60,11 @@ IOdictionary momentumTransportProperties
 const dictionary& fvSchemesDict = mesh.schemes().dict();
 const dictionary& fvSolutionDict = mesh.solution().dict();
 const dictionary* gpuSolutionControls = nullptr;
-if (fvSolutionDict.found("GPU2_6"))
+if (fvSolutionDict.found("GPU2_8"))
+{
+    gpuSolutionControls = &fvSolutionDict.subDict("GPU2_8");
+}
+else if (fvSolutionDict.found("GPU2_6"))
 {
     gpuSolutionControls = &fvSolutionDict.subDict("GPU2_6");
 }
@@ -88,7 +92,7 @@ if (openFoamGasProperties)
     )
     {
         FatalErrorInFunction
-            << "GPU2.6 currently supports the OpenFOAM thermo combination "
+            << "GPU2.8 currently supports the OpenFOAM thermo combination "
             << "equationOfState=perfectGas, thermo=hConst, transport=const, "
             << "energy=sensibleInternalEnergy. Current thermoType is "
             << thermoType << exit(FatalError);
@@ -128,7 +132,7 @@ else
     {
         FatalErrorInFunction
             << "Missing constant/physicalProperties. Historical cases may "
-            << "temporarily use constant/gksProperties, but new GPU2.6 "
+            << "temporarily use constant/gksProperties, but new GPU2.8 "
             << "cases must use OpenFOAM physicalProperties."
             << exit(FatalError);
     }
@@ -194,13 +198,13 @@ if (!finiteScalar(Rgas.value()) || Rgas.value() <= SMALL)
 if (!finiteScalar(rhoMinG.value()) || rhoMinG.value() <= SMALL)
 {
     FatalErrorInFunction
-        << "fvSolution/GPU2_6 rhoMin must be positive. Current rhoMin = "
+        << "fvSolution/GPU2_8 rhoMin must be positive. Current rhoMin = "
         << rhoMinG.value() << exit(FatalError);
 }
 if (!finiteScalar(TgasMinG.value()) || TgasMinG.value() <= scalar(0))
 {
     FatalErrorInFunction
-        << "fvSolution/GPU2_6 TMin must be positive. Current TMin = "
+        << "fvSolution/GPU2_8 TMin must be positive. Current TMin = "
         << TgasMinG.value() << exit(FatalError);
 }
 if (!finiteScalar(muG.value()) || muG.value() < scalar(0))
@@ -255,7 +259,7 @@ if (openFoamGasNumerics)
     )
     {
         FatalErrorInFunction
-            << "GPU2.6 currently requires gradSchemes/default "
+            << "GPU2.8 currently requires gradSchemes/default "
             << "'Gauss linear' because that is the resident Green-Gauss "
             << "operator implemented on the GPU."
             << exit(FatalError);
@@ -276,7 +280,7 @@ if (openFoamGasNumerics)
     )
     {
         FatalErrorInFunction
-            << "GPU2.6 currently requires "
+            << "GPU2.8 currently requires "
             << "interpolationSchemes/default 'linear'."
             << exit(FatalError);
     }
@@ -293,7 +297,7 @@ if (openFoamGasNumerics)
     )
     {
         FatalErrorInFunction
-            << "GPU2.6 currently requires snGradSchemes/default "
+            << "GPU2.8 currently requires snGradSchemes/default "
             << "'corrected'."
             << exit(FatalError);
     }
@@ -317,7 +321,7 @@ if (openFoamGasNumerics)
     )
     {
         FatalErrorInFunction
-            << "GPU2.6 currently requires laplacianSchemes/default "
+            << "GPU2.8 currently requires laplacianSchemes/default "
             << "'Gauss linear corrected'."
             << exit(FatalError);
     }
@@ -385,7 +389,7 @@ if (openFoamGasNumerics)
     if (divViscous != "linear")
     {
         FatalErrorInFunction
-            << "GPU2.6 currently requires "
+            << "GPU2.8 currently requires "
             << "div(((rho*nuEff)*dev2(T(grad(U))))) 'Gauss linear'."
             << exit(FatalError);
     }
@@ -601,7 +605,7 @@ else
 if (!gasRobustFallback && gasFluxScheme >= 4)
 {
     FatalErrorInFunction
-        << "fvSolution/GPU2_6 robustFallback must remain true for "
+        << "fvSolution/GPU2_8 robustFallback must remain true for "
         << "contact-resolving and AUSM-family fluxes."
         << exit(FatalError);
 }
@@ -614,6 +618,26 @@ scalar lesDeltaCoeff = scalar(1);
 scalar turbulentPrandtl = scalar(0.9);
 scalar waleCw = scalar(0.325);
 scalar smagorinskyCs = scalar(0.17);
+scalar sstAlphaK1 = scalar(0.85);
+scalar sstAlphaK2 = scalar(1.0);
+scalar sstAlphaOmega1 = scalar(0.5);
+scalar sstAlphaOmega2 = scalar(0.856);
+scalar sstBeta1 = scalar(0.075);
+scalar sstBeta2 = scalar(0.0828);
+scalar sstBetaStar = scalar(0.09);
+scalar sstGamma1 = scalar(5.0/9.0);
+scalar sstGamma2 = scalar(0.44);
+scalar sstA1 = scalar(0.31);
+scalar sstB1 = scalar(1.0);
+scalar sstC1 = scalar(10.0);
+scalar sstKMin = scalar(1.0e-12);
+scalar sstOmegaMin = scalar(1.0e-6);
+scalar sstMaxSourceNumber = scalar(0.25);
+word sstWallTreatmentName("lowRe");
+label sstWallTreatment = 0;
+scalar sstWallKappa = scalar(0.41);
+scalar sstWallE = scalar(9.8);
+scalar sstWallCmu = scalar(0.09);
 
 if (!momentumTransportProperties.empty())
 {
@@ -644,11 +668,63 @@ if (!momentumTransportProperties.empty())
         smagorinskyCs =
             modelCoeffs.lookupOrDefault<scalar>("Cs", smagorinskyCs);
     }
+    else if (simulationType == "RAS")
+    {
+        const dictionary& ras =
+            momentumTransportProperties.subDict("RAS");
+        const Switch turbulenceEnabled =
+            ras.lookupOrDefault<Switch>("turbulence", Switch(true));
+        gasTurbulenceModelName =
+            turbulenceEnabled ? word(ras.lookup("model")) : word("laminar");
+        turbulentPrandtl = ras.lookupOrDefault<scalar>
+        (
+            "turbulentPrandtl",
+            turbulentPrandtl
+        );
+
+        if (turbulenceEnabled && gasTurbulenceModelName == "kOmegaSST")
+        {
+            const dictionary modelCoeffs =
+                ras.subOrEmptyDict("kOmegaSSTCoeffs");
+            sstAlphaK1 = modelCoeffs.lookupOrDefault<scalar>("alphaK1", scalar(0.85));
+            sstAlphaK2 = modelCoeffs.lookupOrDefault<scalar>("alphaK2", scalar(1.0));
+            sstAlphaOmega1 = modelCoeffs.lookupOrDefault<scalar>("alphaOmega1", scalar(0.5));
+            sstAlphaOmega2 = modelCoeffs.lookupOrDefault<scalar>("alphaOmega2", scalar(0.856));
+            sstBeta1 = modelCoeffs.lookupOrDefault<scalar>("beta1", scalar(0.075));
+            sstBeta2 = modelCoeffs.lookupOrDefault<scalar>("beta2", scalar(0.0828));
+            sstBetaStar = modelCoeffs.lookupOrDefault<scalar>("betaStar", scalar(0.09));
+            sstGamma1 = modelCoeffs.lookupOrDefault<scalar>("gamma1", scalar(5.0/9.0));
+            sstGamma2 = modelCoeffs.lookupOrDefault<scalar>("gamma2", scalar(0.44));
+            sstA1 = modelCoeffs.lookupOrDefault<scalar>("a1", scalar(0.31));
+            sstB1 = modelCoeffs.lookupOrDefault<scalar>("b1", scalar(1.0));
+            sstC1 = modelCoeffs.lookupOrDefault<scalar>("c1", scalar(10.0));
+            sstKMin = modelCoeffs.lookupOrDefault<scalar>("kMin", scalar(1.0e-12));
+            sstOmegaMin = modelCoeffs.lookupOrDefault<scalar>("omegaMin", scalar(1.0e-6));
+            sstMaxSourceNumber = modelCoeffs.lookupOrDefault<scalar>("maxSourceNumber", scalar(0.25));
+            sstWallTreatmentName =
+                modelCoeffs.lookupOrDefault<word>("wallTreatment", "lowRe");
+            sstWallKappa =
+                modelCoeffs.lookupOrDefault<scalar>("wallKappa", scalar(0.41));
+            sstWallE =
+                modelCoeffs.lookupOrDefault<scalar>("wallE", scalar(9.8));
+            sstWallCmu =
+                modelCoeffs.lookupOrDefault<scalar>("wallCmu", scalar(0.09));
+            const Switch f3 =
+                modelCoeffs.lookupOrDefault<Switch>("F3", Switch(false));
+            if (f3)
+            {
+                FatalErrorInFunction
+                    << "GPU2.8CHTSST implements the smooth-wall OpenFOAM-10 "
+                    << "kOmegaSST model and therefore requires F3=false."
+                    << exit(FatalError);
+            }
+        }
+    }
     else
     {
         FatalErrorInFunction
             << "momentumTransport simulationType '" << simulationType
-            << "' is unsupported. Valid values are laminar and LES."
+            << "' is unsupported. Valid values are laminar, LES and RAS."
             << exit(FatalError);
     }
 }
@@ -705,12 +781,32 @@ else if (gasTurbulenceModelName == "Smagorinsky")
 {
     gasTurbulenceModel = 2;
 }
+else if (gasTurbulenceModelName == "kOmegaSST")
+{
+    gasTurbulenceModel = 3;
+    if (sstWallTreatmentName == "lowRe")
+    {
+        sstWallTreatment = 0;
+    }
+    else if (sstWallTreatmentName == "wallFunction")
+    {
+        sstWallTreatment = 1;
+    }
+    else
+    {
+        FatalErrorInFunction
+            << "Unsupported kOmegaSST wallTreatment '"
+            << sstWallTreatmentName
+            << "'. Valid values are lowRe and wallFunction."
+            << exit(FatalError);
+    }
+}
 else
 {
     FatalErrorInFunction
-        << "Unsupported momentumTransport LES model '"
+        << "Unsupported momentumTransport model '"
         << gasTurbulenceModelName
-        << "'. Valid values are WALE and Smagorinsky."
+        << "'. Valid values are laminar, WALE, Smagorinsky and kOmegaSST."
         << exit(FatalError);
 }
 
@@ -741,8 +837,35 @@ if (!finiteScalar(smagorinskyCs) || smagorinskyCs < scalar(0))
 if (!finiteScalar(maxDiffusionNumber) || maxDiffusionNumber <= SMALL)
 {
     FatalErrorInFunction
-        << "fvSolution/GPU2_6 maxDiffusionNumber must be positive."
+        << "fvSolution/GPU2_8 maxDiffusionNumber must be positive."
         << exit(FatalError);
+}
+if
+(
+    !finiteScalar(sstAlphaK1) || sstAlphaK1 <= SMALL
+ || !finiteScalar(sstAlphaK2) || sstAlphaK2 <= SMALL
+ || !finiteScalar(sstAlphaOmega1) || sstAlphaOmega1 <= SMALL
+ || !finiteScalar(sstAlphaOmega2) || sstAlphaOmega2 <= SMALL
+ || !finiteScalar(sstBeta1) || sstBeta1 <= SMALL
+ || !finiteScalar(sstBeta2) || sstBeta2 <= SMALL
+ || !finiteScalar(sstBetaStar) || sstBetaStar <= SMALL
+ || !finiteScalar(sstGamma1) || sstGamma1 <= SMALL
+ || !finiteScalar(sstGamma2) || sstGamma2 <= SMALL
+ || !finiteScalar(sstA1) || sstA1 <= SMALL
+ || !finiteScalar(sstB1) || sstB1 <= SMALL
+ || !finiteScalar(sstC1) || sstC1 <= SMALL
+ || !finiteScalar(sstKMin) || sstKMin <= scalar(0)
+ || !finiteScalar(sstOmegaMin) || sstOmegaMin <= scalar(0)
+ || !finiteScalar(sstMaxSourceNumber) || sstMaxSourceNumber <= SMALL
+ || !finiteScalar(sstWallKappa) || sstWallKappa <= SMALL
+ || !finiteScalar(sstWallE) || sstWallE <= scalar(1)
+ || !finiteScalar(sstWallCmu) || sstWallCmu <= SMALL
+)
+{
+    FatalErrorInFunction
+        << "kOmegaSST coefficients, wall constants, floors and "
+        << "maxSourceNumber must be "
+        << "finite and positive." << exit(FatalError);
 }
 
 #endif

@@ -9,6 +9,8 @@
 
 # GPU–Riemann–GKP
 
+Current release: **2.8.0** · [Changelog](CHANGELOG.md)
+
 GPU–Riemann–GKP advances a compressible Eulerian gas phase with configurable Riemann fluxes and a Lagrangian particle phase with the gas-kinetic particle method (GKP). The solver keeps mesh topology, conservative gas fields, particle structure-of-arrays state, random state, coupling ledgers, and restart state on the GPU throughout each time-step sequence.
 
 The OpenFOAM frontend supplies familiar case dictionaries, patch fields, run control, field output, and restart management. The CUDA backend executes gas fluxes, viscous transport, gas–particle coupling, stochastic particle collisions, unstructured particle tracking, particle moments, and CP-CST maintenance.
@@ -218,7 +220,7 @@ The current `fluxScheme` interface accepts:
 - SLAU2
 - SLAU2.2
 
-#### Molecular and LES transport
+#### Molecular and turbulence transport
 
 The face viscous flux uses the OpenFOAM 10 Newtonian stress and Fourier heat flux,
 
@@ -290,7 +292,36 @@ and evaluates the OpenFOAM 10 form
 +(\mathbf{S}^{w}:\mathbf{S}^{w})^{5/4}}.
 ```
 
-This formulation uses the full symmetric-gradient invariant $\mathbf{S}:\mathbf{S}$ in the WALE denominator and the deviatoric invariant $\mathbf{S}^{d}:\mathbf{S}^{d}$ in the compressible Smagorinsky model. `constant/momentumTransport` selects `simulationType laminar` or `simulationType LES`; the `LES` dictionary selects `WALE` or `Smagorinsky`, the model coefficient $C_w$ or $C_s$, and `cubeRootVolCoeffs/deltaCoeff` for $C_\Delta$. The OpenFOAM configuration path uses $\Pr_t=0.9$ for turbulent heat transport.
+This formulation uses the full symmetric-gradient invariant $\mathbf{S}:\mathbf{S}$ in the WALE denominator and the deviatoric invariant $\mathbf{S}^{d}:\mathbf{S}^{d}$ in the compressible Smagorinsky model.
+
+GPU2.8 also provides an explicit GPU-resident $k$-$\omega$ SST model. The transported conservative variables are $\rho k$ and $\rho\omega$:
+
+```math
+\frac{\partial(\rho k)}{\partial t}
++\nabla\cdot(\rho\mathbf{U}k)
+=P_k-\beta^{*}\rho k\omega
++\nabla\cdot\left[(\mu+\sigma_k\mu_t)\nabla k\right],
+```
+
+```math
+\frac{\partial(\rho\omega)}{\partial t}
++\nabla\cdot(\rho\mathbf{U}\omega)
+=\gamma\frac{\rho P_k}{\mu_t}
+-\beta\rho\omega^2
++\nabla\cdot\left[(\mu+\sigma_\omega\mu_t)\nabla\omega\right]
++D_{\omega}.
+```
+
+The SST fields and their gradients remain GPU resident during time advancement. `k`, `omega`, and `nut` are returned to OpenFOAM when a write is requested. The SST stability bound is evaluated through the same Courant/diffusion update path as the gas equations.
+
+`constant/momentumTransport` selects one of four modes:
+
+- `simulationType laminar`;
+- `simulationType LES` with `model WALE`;
+- `simulationType LES` with `model Smagorinsky`;
+- `simulationType RAS` with `model kOmegaSST`.
+
+SST accepts `wallTreatment lowRe` for wall-resolved meshes and `wallTreatment wallFunction` for Spalding velocity, SST wall-state, and Jayatilleke thermal wall functions. The OpenFOAM configuration path uses the selected `turbulentPrandtl`, with a default value of $\Pr_t=0.9$.
 
 #### Finite-volume and time update
 
@@ -333,7 +364,7 @@ and the runtime step also enforces the configured viscous/thermal diffusion-numb
 The gas configuration follows OpenFOAM dictionaries:
 
 - `constant/physicalProperties` defines perfect-gas thermodynamics and constant molecular transport.
-- `constant/momentumTransport` selects laminar, WALE, or Smagorinsky transport.
+- `constant/momentumTransport` selects laminar, WALE, Smagorinsky, or explicit GPU $k$-$\omega$ SST transport.
 - `system/fvSchemes` selects the Riemann flux, spatial reconstruction, and explicit time integrator.
 - `system/fvSolution` stores density, temperature, diffusion-number, and robust-flux safeguards.
 - `0/U`, `0/p`, and `0/T` supply standard OpenFOAM patch-field semantics.
@@ -595,7 +626,7 @@ The packaged backend contains native CUDA code for Turing, Ampere, Ada, and Hopp
 ```bash
 mkdir -p "$WM_PROJECT_USER_DIR/applications/solvers"
 cd "$WM_PROJECT_USER_DIR/applications/solvers"
-git clone https://github.com/zyy212121/GPU-Riemann-GKP.git GPU-Riemann-GKP
+git clone https://github.com/zyy212121/gpu-riemann-gkp.git GPU-Riemann-GKP
 cd GPU-Riemann-GKP
 ./install.sh
 ```
@@ -604,7 +635,7 @@ cd GPU-Riemann-GKP
 
 ```text
 $FOAM_USER_APPBIN/GpuGkp
-$FOAM_USER_APPBIN/gpu26CudaBackend
+$FOAM_USER_APPBIN/gpu28CudaBackend
 ```
 
 An OpenFOAM installation at a custom location can be selected with:
@@ -614,10 +645,10 @@ export OPENFOAM_BASHRC=/absolute/path/to/openfoam10/etc/bashrc
 ./install.sh
 ```
 
-The `GpuGkp` frontend launches `gpu26CudaBackend` from `$FOAM_USER_APPBIN`. A custom backend location can be selected with:
+The `GpuGkp` frontend launches `gpu28CudaBackend` from `$FOAM_USER_APPBIN`. A custom backend location can be selected with:
 
 ```bash
-export GPU26_CUDA_BACKEND=/absolute/path/to/gpu26CudaBackend
+export GPU28_CUDA_BACKEND=/absolute/path/to/gpu28CudaBackend
 ```
 
 ## OpenFOAM-style case setup
@@ -633,7 +664,9 @@ case/
 │   ├── epsilonS
 │   ├── Us
 │   ├── theta
-│   └── Tp                    # required when particleTemperatureTransport=true
+│   ├── Tp                    # required when particleTemperatureTransport=true
+│   ├── k                     # required for kOmegaSST
+│   └── omega                 # required for kOmegaSST
 ├── constant/
 │   ├── physicalProperties
 │   ├── momentumTransport
@@ -657,6 +690,9 @@ case/
 | `Us` | Particle mean velocity | Required |
 | `theta` | Particle fluctuating energy | Required |
 | `Tp` | Particle material temperature | Required when particle temperature transport is active |
+| `k` | Turbulent kinetic energy | Required for kOmegaSST |
+| `omega` | Specific dissipation rate | Required for kOmegaSST |
+| `nut` | Turbulent kinematic viscosity | Generated and written by kOmegaSST |
 | `rho`, `rhoU`, `rhoE` | Gas restart state | Read when present and reconstructed from primitive fields for a fresh case |
 | `rhoUs`, `rhoEs`, `rhoDs` | Particle-moment restart fields | Read when present and reconstructed for a fresh case |
 
@@ -697,7 +733,30 @@ mixture
 }
 ```
 
-`constant/momentumTransport` selects `laminar` or an LES model. GPU2.6 supports `WALE` and `Smagorinsky` with standard OpenFOAM model dictionaries.
+`constant/momentumTransport` selects `laminar`, `WALE`, `Smagorinsky`, or `kOmegaSST`. A minimal SST configuration is:
+
+```foam
+simulationType RAS;
+
+RAS
+{
+    model               kOmegaSST;
+    turbulence          on;
+    printCoeffs         on;
+    turbulentPrandtl    0.9;
+
+    kOmegaSSTCoeffs
+    {
+        wallTreatment   lowRe;
+        kMin            1e-12;
+        omegaMin        1e-6;
+        maxSourceNumber 0.25;
+        F3              false;
+    }
+}
+```
+
+Set `wallTreatment wallFunction` for the wall-function path. Wall-function cases use the standard OpenFOAM `kqRWallFunction` and `omegaWallFunction` patch fields; `nut` is generated by the GPU model.
 
 ### Gas numerical schemes
 
@@ -747,7 +806,7 @@ The supported explicit time schemes are `Euler`, `SSPRK2`, and `SSPRK3`. A fully
 `system/fvSolution` carries gas safeguards:
 
 ```foam
-GPU2_6
+GPU2_8
 {
     rhoMin              1e-12;
     TMin                1;
@@ -791,11 +850,9 @@ gpuResidentCollisionalPressure     true;
 gpuResidentCollisionalRestitution  0.9;
 gpuResidentPressureKickFraction    0.25;
 
-gpuResidentJammingPressure         true;
-gpuResidentPackingFraction         0.63;
-gpuResidentJammingOnset            0.55;
-gpuResidentJammingPressureScale    0.05;
-gpuResidentJammingRegularization   0.01;
+gpuResidentJammingPressure             true;
+gpuResidentPackingFraction             0.63;
+gpuResidentPackingProjectionIterations 20;
 
 gpuCsrCellLocalPath                true;
 gpuCsrWarpAggregatedBinning        true;
@@ -825,8 +882,9 @@ particleWallCoeffs
 | `particleTemperatureTransport` | Particle material-temperature equation switch |
 | `gpuResidentCollisionalPressure` | Granular collisional-pressure switch |
 | `gpuResidentPressureKickFraction` | Fractional substep used by the particle-pressure kick |
-| `gpuResidentJammingPressure` | High-volume-fraction soft-pressure switch |
-| `gpuResidentPackingFraction` | Packing limit used by the jamming-pressure law |
+| `gpuResidentJammingPressure` | Conservative mobile-particle packing-projection switch |
+| `gpuResidentPackingFraction` | Maximum mobile-particle packing fraction used by the complementarity projection |
+| `gpuResidentPackingProjectionIterations` | Jacobi iteration count and matching fixed active-neighbourhood depth; default 20, minimum 1 |
 | `gpuCsrCellLocalPath` | CP-CST L1 path switch |
 | `gpuCsrWarpAggregatedBinning` | E1 warp aggregation switch |
 | `gpuCsrHeavyReduction` | E2 heavy-cell scheduling switch |
@@ -847,7 +905,7 @@ Each supplied case provides `Allrun` and `Allclean`, or a family-level runner fo
 | Example family | Coverage |
 |---|---|
 | `examples/gks_flux_validation` | Sod, Couette, Fourier, and acoustic-wave gas validation |
-| `examples/les_validation` | WALE and Smagorinsky affine-field validation |
+| `examples/les_validation` | WALE and Smagorinsky affine-field checks plus low-Re and wall-function SST smoke cases |
 | `examples/twophaseflux` | DustyBox, DustyWave, and wind–sand shock tube |
 | `examples/pressuretest/GPU_gas` | Eight Riemann fluxes on the nozzle pressure test |
 | `examples/pressuretest/GPU_twophase/cp_cst_test` | L0, L1, E1, and E2 sparse/dense CP-CST runs |
@@ -863,13 +921,14 @@ GPU-Riemann-GKP/
 ├── gpu/                           # frontend API, protocol, boundary schedule, client
 ├── backend/                       # executable-only CUDA backend, manifest, checksum, licence
 ├── install.sh                     # backend installation and frontend compilation
+├── CHANGELOG.md                   # public version history and migration notes
 ├── scripts/                       # shared OpenFOAM environment discovery
 ├── Make/                          # OpenFOAM build metadata
 ├── examples/                      # minimal runnable cases
 └── assets/                        # README visuals and validation figures
 ```
 
-The repository publishes the GPL-3.0-or-later OpenFOAM frontend source, public process protocol, runnable cases, and a precompiled CUDA backend. CUDA backend implementation source remains in the private development repository. The separate executable boundary keeps OpenFOAM libraries in `GpuGkp` and CUDA runtime code in `gpu26CudaBackend`; the backend binary is governed by [`backend/BINARY-LICENSE.txt`](backend/BINARY-LICENSE.txt).
+The repository publishes the GPL-3.0-or-later OpenFOAM frontend source, public process protocol, runnable cases, and a precompiled CUDA backend. CUDA backend implementation source remains in the private development repository. The separate executable boundary keeps OpenFOAM libraries in `GpuGkp` and CUDA runtime code in `gpu28CudaBackend`; the backend binary is governed by [`backend/BINARY-LICENSE.txt`](backend/BINARY-LICENSE.txt).
 
 The backend manifest is available in [`backend/manifest.txt`](backend/manifest.txt), and [`backend/SHA256SUMS`](backend/SHA256SUMS) provides the release checksum.
 

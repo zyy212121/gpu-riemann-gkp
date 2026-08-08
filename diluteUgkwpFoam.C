@@ -1,9 +1,10 @@
 #include "fvCFD.H"
 #include "physicoChemicalConstants.H"
 #include "zeroGradientFvPatchFields.H"
+#include "wallDist.H"
 
 #ifndef UGKWP_USE_CUDA
-#error GPU-Riemann-GKP must be installed with UGKWP_USE_CUDA; run ./install.sh
+#error GPU2.8 must be built with UGKWP_USE_CUDA; use private_backend/build_private_backend.sh
 #endif
 
 #ifdef UGKWP_USE_CUDA
@@ -34,8 +35,23 @@ int main(int argc, char *argv[])
 {
     #include "setRootCase.H"
     #include "createTime.H"
+    Info<< "GPU2.8: separated-backend explicit GPU turbulence solver" << nl;
     #include "createMesh.H"
     #include "createFields.H"
+
+    const volScalarField* sstWallDistancePtr = nullptr;
+    if (gasTurbulenceModel == 3)
+    {
+        sstWallDistancePtr = &wallDist::New(mesh).y();
+        Info<< "Gas turbulence: RAS kOmegaSST, explicit resident CUDA; "
+            << "wallTreatment=" << sstWallTreatmentName
+            << " wallKappa=" << sstWallKappa
+            << " wallE=" << sstWallE
+            << " wallCmu=" << sstWallCmu
+            << "; kMin=" << sstKMin
+            << " omegaMin=" << sstOmegaMin
+            << " maxSourceNumber=" << sstMaxSourceNumber << nl;
+    }
 
     const bool gpuResidentStrict =
         ugkwpProps.lookupOrDefault<bool>("gpuResidentStrict", false);
@@ -381,6 +397,46 @@ int main(int argc, char *argv[])
             return scheduledBoundaryChanged;
         };
 
+        const auto configureResidentSst = [&](auto& resident)
+        {
+            if (gasTurbulenceModel != 3)
+            {
+                return;
+            }
+            if (sstWallDistancePtr == nullptr)
+            {
+                FatalErrorInFunction
+                    << "SST wall-distance geometry was not constructed."
+                    << exit(FatalError);
+            }
+            resident.configureSst
+            (
+                mesh,
+                k,
+                omega,
+                *sstWallDistancePtr,
+                sstAlphaK1,
+                sstAlphaK2,
+                sstAlphaOmega1,
+                sstAlphaOmega2,
+                sstBeta1,
+                sstBeta2,
+                sstBetaStar,
+                sstGamma1,
+                sstGamma2,
+                sstA1,
+                sstB1,
+                sstC1,
+                sstKMin,
+                sstOmegaMin,
+                sstMaxSourceNumber,
+                sstWallTreatment,
+                sstWallKappa,
+                sstWallE,
+                sstWallCmu
+            );
+        };
+
         bool adjustTimeStep = false;
         scalar maxCo = 0.5;
         scalar maxDeltaT = GREAT;
@@ -419,6 +475,7 @@ int main(int argc, char *argv[])
                 rhoMinStrict,
                 TgasMinStrict
             );
+            configureResidentSst(resident);
 
             dispatchScheduledBoundary(resident, runTime.value(), true);
 
@@ -478,7 +535,20 @@ int main(int argc, char *argv[])
                         p,
                         Tgas
                     );
-                    resident.downloadNutToHostMirror(runTime, nut);
+                    if (gasTurbulenceModel == 3)
+                    {
+                        resident.downloadSstToHostMirror
+                        (
+                            runTime,
+                            k,
+                            omega,
+                            nut
+                        );
+                    }
+                    else
+                    {
+                        resident.downloadNutToHostMirror(runTime, nut);
+                    }
 
                     runTime.write();
                     Info<< "runTime = " << runTime.elapsedClockTime()
@@ -550,6 +620,7 @@ int main(int argc, char *argv[])
             TpMaxStrict,
             ugkwpProps
         );
+        configureResidentSst(resident);
         dispatchScheduledBoundary(resident, runTime.value(), true);
 
         scalar lastMeasuredCo = scalar(0);
@@ -621,7 +692,20 @@ int main(int argc, char *argv[])
                     Tp,
                     dMeanCell
                 );
-                resident.downloadNutToHostMirror(runTime, nut);
+                if (gasTurbulenceModel == 3)
+                {
+                    resident.downloadSstToHostMirror
+                    (
+                        runTime,
+                        k,
+                        omega,
+                        nut
+                    );
+                }
+                else
+                {
+                    resident.downloadNutToHostMirror(runTime, nut);
+                }
 
                 runTime.write();
                 const label currentParticleCount =

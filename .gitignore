@@ -9,8 +9,8 @@ Make/linux*/
 *.exe
 
 # Keep the packaged executable-only CUDA backend.
-!backend/linux-x86_64/gpu26CudaBackend
-!backend/linux-x86_64/gpu26CudaBackend-twophaseflux-validation
+!backend/linux-x86_64/gpu28CudaBackend
+!backend/linux-x86_64/gpu28CudaBackend-twophaseflux-validation
 
 # Python and test caches
 .pytest_cache/

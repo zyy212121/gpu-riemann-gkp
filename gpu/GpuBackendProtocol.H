@@ -8,9 +8,9 @@
 namespace ugkwpGpuIpc
 {
 
-static constexpr std::uint32_t magic = 0x47553236U; // "GU26"
+static constexpr std::uint32_t magic = 0x47553238U; // "GU28"
 static constexpr std::uint16_t protocolMajor = 3;
-static constexpr std::uint16_t protocolMinor = 0;
+static constexpr std::uint16_t protocolMinor = 2;
 static constexpr std::uint64_t maxPayloadBytes = 32ULL*1024ULL*1024ULL*1024ULL;
 
 enum class Op : std::uint32_t
@@ -33,7 +33,9 @@ enum class Op : std::uint32_t
     downloadEpsGPrev,
     uploadEpsGPrev,
     downloadNut,
-    release
+    release,
+    configureSst,
+    downloadSst
 };
 
 enum class GasFluxScheme : std::int32_t
@@ -74,7 +76,8 @@ enum class TurbulenceModel : std::int32_t
 {
     laminar = 0,
     WALE = 1,
-    Smagorinsky = 2
+    Smagorinsky = 2,
+    kOmegaSST = 3
 };
 
 struct RequestHeader
@@ -131,6 +134,7 @@ struct CreateArgs
     double pressureKickFraction;
     std::int32_t jammingPressureEnabled;
     double packingFraction;
+    std::int32_t packingProjectionIterations;
     double jammingOnset;
     double jammingPressureScale;
     double jammingRegularization;
@@ -184,6 +188,29 @@ struct CourantArgs
     double targetMaxCo;
 };
 
+struct SstConfigArgs
+{
+    double alphaK1;
+    double alphaK2;
+    double alphaOmega1;
+    double alphaOmega2;
+    double beta1;
+    double beta2;
+    double betaStar;
+    double gamma1;
+    double gamma2;
+    double a1;
+    double b1;
+    double c1;
+    double kMin;
+    double omegaMin;
+    double maxSourceNumber;
+    std::int32_t wallTreatment;
+    double wallKappa;
+    double wallE;
+    double wallCmu;
+};
+
 inline bool validCount(const std::int32_t count, const std::int32_t limit)
 {
     return count >= 0 && count <= limit;
@@ -213,12 +240,13 @@ inline bool addArrayBytes(std::uint64_t& total, const std::uint64_t count)
 
 static_assert(sizeof(RequestHeader) == 24, "unexpected request header ABI");
 static_assert(sizeof(ResponseHeader) == 24, "unexpected response header ABI");
-static_assert(sizeof(CreateArgs) == 352, "unexpected create payload ABI");
+static_assert(sizeof(CreateArgs) == 360, "unexpected create payload ABI");
 static_assert(sizeof(CountArgs) == 4, "unexpected count payload ABI");
 static_assert(sizeof(ScheduledInletArgs) == 32, "unexpected inlet payload ABI");
 static_assert(sizeof(AdvanceArgs) == 16, "unexpected advance payload ABI");
 static_assert(sizeof(ScalarArgs) == 8, "unexpected scalar payload ABI");
 static_assert(sizeof(CourantArgs) == 16, "unexpected Courant payload ABI");
+static_assert(sizeof(SstConfigArgs) == 152, "unexpected SST config ABI");
 
 } // namespace ugkwpGpuIpc
 

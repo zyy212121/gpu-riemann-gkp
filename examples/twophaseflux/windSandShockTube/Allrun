@@ -40,13 +40,13 @@ restored=false
 restore_backend() { if [[ "${restored}" == false ]]; then ./Allrestore; restored=true; fi; }
 trap restore_backend EXIT
 ./Allwmake
-export GPU26_CUDA_BACKEND="${FOAM_USER_APPBIN}/gpu26CudaBackend"
-export GPU26_VALIDATION_PARTICLE_RESPONSE_TIME="$(read_dictionary_entry gpuResidentParticleResponseTime constant/ugkwpProperties)"
-export GPU26_VALIDATION_THERMAL_RESPONSE_TIME="$(read_dictionary_entry gpuResidentParticleThermalResponseTime constant/ugkwpProperties)"
-export GPU26_VALIDATION_GAS_HEAT_CAPACITY="$(read_dictionary_entry gpuResidentGasHeatCapacity constant/ugkwpProperties)"
+export GPU28_CUDA_BACKEND="${FOAM_USER_APPBIN}/gpu28CudaBackend"
+export GPU28_VALIDATION_PARTICLE_RESPONSE_TIME="$(read_dictionary_entry gpuResidentParticleResponseTime constant/ugkwpProperties)"
+export GPU28_VALIDATION_THERMAL_RESPONSE_TIME="$(read_dictionary_entry gpuResidentParticleThermalResponseTime constant/ugkwpProperties)"
+export GPU28_VALIDATION_GAS_HEAT_CAPACITY="$(read_dictionary_entry gpuResidentGasHeatCapacity constant/ugkwpProperties)"
 blockMesh > log.blockMesh 2>&1
-/usr/bin/time -f 'elapsed_seconds=%e' -o runtime.gpu2.6 \
-    "${FOAM_USER_APPBIN}/GpuGkp" > log.gpu2.6 2>&1
+/usr/bin/time -f 'elapsed_seconds=%e' -o runtime.gpu2.8 \
+    "${FOAM_USER_APPBIN}/GpuGkp" > log.gpu2.8 2>&1
 PYTHONDONTWRITEBYTECODE=1 python3 postprocess.py
 restore_backend
 trap - EXIT

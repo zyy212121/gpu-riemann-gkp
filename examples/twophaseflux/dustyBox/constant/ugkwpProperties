@@ -16,7 +16,7 @@ gpuResidentMaxFaceWalkHops 32;
 gpuResidentCourantUpdateInterval 100;
 gpuResidentMaxDeltaTGrowth 1.0;
 
-// Explicit sealed GPU2.6 L1 particle path.  E1/E2 are validation variants,
+// Explicit sealed GPU2.8 L1 particle path.  E1/E2 are validation variants,
 // not defaults for these physical reference cases.
 gpuCsrCellLocalPath true;
 gpuCsrHeavyReduction false;
@@ -42,6 +42,7 @@ gpuResidentCollisionalPressure false;
 gpuResidentCollisionalRestitution 1.0;
 gpuResidentPressureKickFraction 0.25;
 gpuResidentJammingPressure false;
+gpuResidentPackingProjectionIterations 20;
 epsSMin 1e-14;
 thetaMin 0;
 TgasMin 1e-8;
