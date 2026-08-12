@@ -27,7 +27,7 @@ set -eu
 user_foam_root="$(cd "${solver_root}/../../.." && pwd)"
 export FOAM_USER_APPBIN="${FOAM_USER_APPBIN:-${user_foam_root}/platforms/${WM_OPTIONS}/bin}"
 frontend="${FOAM_USER_APPBIN}/GpuGkp"
-backend="${FOAM_USER_APPBIN}/gpu28CudaBackend"
+backend="${FOAM_USER_APPBIN}/gpu30CudaBackend"
 
 case "${level}" in
     l0)
@@ -74,8 +74,8 @@ require_value()
     fi
 }
 
-if pgrep -f '[d]iluteUgkwpFoam_GPU2_8|[g]pu26CudaBackend' >/dev/null; then
-    echo "ERROR: another GPU2.8 calculation is already running." >&2
+if pgrep -f '[G]puGkp|[g]pu30CudaBackend' >/dev/null; then
+    echo "ERROR: another GPU 3.0 calculation is already running." >&2
     exit 1
 fi
 
@@ -95,12 +95,12 @@ require_value system/controlDict writeInterval 0.01
 require_value constant/ugkwpProperties gpuResidentPureGasOnly false
 require_value constant/ugkwpProperties particleTemperatureTransport false
 require_value constant/ugkwpProperties parcelMass "${expected_mass}"
+require_value constant/ugkwpProperties injectionParcelMass "${expected_mass}"
+require_value constant/ugkwpProperties legacyRestartParcelMass "${expected_mass}"
 require_value constant/ugkwpProperties gpuResidentParticleCapacity "${expected_capacity}"
 require_value constant/ugkwpProperties gpuCsrCellLocalPath "${expected_path}"
 require_value constant/ugkwpProperties gpuCsrHeavyReduction "${expected_heavy}"
-require_value constant/ugkwpProperties gpuCsrHeavyCellThreshold 1024
-require_value constant/ugkwpProperties gpuCsrHeavyTileParticles 1024
-require_value constant/ugkwpProperties gpuCsrHeavyWorkerBlocksPerSM 4
+require_value constant/ugkwpProperties bn 8
 require_value constant/ugkwpProperties gpuCsrWarpAggregatedBinning "${expected_warp}"
 
 if [[ "${CP_CST_CHECK_ONLY:-0}" == "1" ]]; then
@@ -113,7 +113,7 @@ if [[ -e log.gpu || -e runtime.gpu ]]; then
     exit 1
 fi
 
-export GPU28_CUDA_BACKEND="${backend}"
+export GPU30_CUDA_BACKEND="${backend}"
 
 echo "Starting ${group}/${level}: runtime CP-CST path=${expected_path}" >&2
 exec /usr/bin/time \

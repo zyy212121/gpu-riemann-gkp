@@ -2,14 +2,16 @@
 #include "physicoChemicalConstants.H"
 #include "zeroGradientFvPatchFields.H"
 #include "wallDist.H"
+#include "uniformDimensionedFields.H"
 
 #ifndef UGKWP_USE_CUDA
-#error GPU2.8 must be built with UGKWP_USE_CUDA; use private_backend/build_private_backend.sh
+#error GpuGkp must be built with UGKWP_USE_CUDA; run ./install.sh
 #endif
 
 #ifdef UGKWP_USE_CUDA
 #include "gpu/GpuResidentStrict.H"
 #include "gpu/GpuBoundarySchedule.H"
+#include "gpu/GpuDragModel.H"
 #include "autoPtr.H"
 #endif
 
@@ -35,7 +37,7 @@ int main(int argc, char *argv[])
 {
     #include "setRootCase.H"
     #include "createTime.H"
-    Info<< "GPU2.8: separated-backend explicit GPU turbulence solver" << nl;
+    Info<< "GPU-Riemann-GKP 3.0: weighted-parcel configurable-block dynamic-heavy separated-backend GPU solver" << nl;
     #include "createMesh.H"
     #include "createFields.H"
 
@@ -101,8 +103,9 @@ int main(int argc, char *argv[])
         {
             FatalErrorInFunction
                 << "gpuResidentStrict=true currently rejects "
-                << "useCudaRepresentativeMerge. The active strict path uses "
-                << "fixed parcelMass and no representative merge."
+                << "useCudaRepresentativeMerge. GPU3.0 supports explicit "
+                << "restart-persistent parcel weights, but not in-step "
+                << "representative merging."
                 << exit(FatalError);
         }
 
@@ -472,6 +475,7 @@ int main(int argc, char *argv[])
                 waleCw,
                 smagorinskyCs,
                 maxDiffusionNumber,
+                g.value(),
                 rhoMinStrict,
                 TgasMinStrict
             );
@@ -581,7 +585,8 @@ int main(int argc, char *argv[])
             theta,
             Tp,
             dMeanCell,
-            parcelMass.value(),
+            injectionParcelMass.value(),
+            legacyRestartParcelMass.value(),
             gpuResidentParticleCapacity,
             gpuResidentMaxFaceWalkHops,
             gpuResidentSeed,
@@ -618,6 +623,9 @@ int main(int argc, char *argv[])
             thetaMinStrict,
             TpMinStrict,
             TpMaxStrict,
+            gpuDragModel->modelId(),
+            gpuDragModel->parameters(),
+            g.value(),
             ugkwpProps
         );
         configureResidentSst(resident);

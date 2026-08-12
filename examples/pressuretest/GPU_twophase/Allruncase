@@ -5,12 +5,29 @@ set -euo pipefail
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 suite_dir="${root_dir}/cp_cst_test"
 
+if [[ "${1:-}" == "--check" ]]; then
+    [[ $# -eq 1 ]] || { printf 'Usage: %s [--check]\n' "${0##*/}" >&2; exit 2; }
+    for case_path in \
+        "${suite_dir}/l0" \
+        "${suite_dir}/l1" \
+        "${suite_dir}/e1" \
+        "${suite_dir}/e2" \
+        "${suite_dir}/dense/e1"
+    do
+        CP_CST_CHECK_ONLY=1 "${suite_dir}/tools/run_case.sh" "${case_path}"
+    done
+    printf 'Configuration check passed: CP-CST family.\n'
+    exit 0
+fi
+
+[[ $# -eq 0 ]] || { printf 'Usage: %s [--check]\n' "${0##*/}" >&2; exit 2; }
+
 if [[ ! -x "${suite_dir}/Allrun.sparse" || ! -x "${suite_dir}/Allrun.dense_e1" ]]; then
     echo "ERROR: incomplete cp_cst_test runtime-switch suite." >&2
     exit 1
 fi
 
-echo "Running the current GPU2.8 CP-CST runtime-switch acceptance suite."
+echo "Running the current GPU 3.0 CP-CST runtime-switch acceptance suite."
 echo "Existing result guards inside the suite remain active."
 "${suite_dir}/Allrun.sparse"
 "${suite_dir}/Allrun.dense_e1"

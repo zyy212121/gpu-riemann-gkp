@@ -7,7 +7,7 @@
 extern "C" int ugkwpGpuResidentStrictCreate
 (
     int nCells, int nFaces, int nInternalFaces, int nCellPlanes,
-    int particleCapacity, int maxFaceWalkHops, double parcelMass,
+    int particleCapacity, int maxFaceWalkHops, double injectionParcelMass,
     unsigned long long rngSeed, double gammaGas, double Rgas,
     double rhoSolid, int solveParticleTemperature,
     double particleThermalRho, double particleCp, double gasMu,
@@ -27,14 +27,19 @@ extern "C" int ugkwpGpuResidentStrictCreate
     double turbulentPrandtl, double waleCw, double smagorinskyCs,
     double maxDiffusionNumber, int csrCellLocalPathEnabled,
     int csrHeavyReductionEnabled,
-    int csrHeavyCellThreshold, int csrHeavyTileParticles,
-    int csrHeavyWorkerBlocksPerSm, int csrWarpAggregatedBinning,
+    int blockExponent, int csrWarpAggregatedBinning,
+    int dragModel, double dragParameter0, double dragParameter1,
+    double dragParameter2, double dragParameter3,
+    double gravityX, double gravityY, double gravityZ,
     void** handle
 );
 
 extern "C" int ugkwpGpuResidentStrictUploadMesh
 (
     void* handle, const int* faceOwner, const int* faceNeighbour,
+    const int* facePeriodicPair,
+    const double* facePeriodicDx, const double* facePeriodicDy,
+    const double* facePeriodicDz,
     const double* V, const double* Cx, const double* Cy, const double* Cz,
     const double* faceCx, const double* faceCy, const double* faceCz,
     const double* Sfx, const double* Sfy, const double* Sfz,

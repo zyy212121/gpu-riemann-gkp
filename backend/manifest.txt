@@ -1,8 +1,8 @@
 GPU-Riemann-GKP CUDA backend binary manifest
 
-Backend executable: linux-x86_64/gpu28CudaBackend
-Validation executable: linux-x86_64/gpu28CudaBackend-twophaseflux-validation
-Frontend/backend compatibility interface: GU28 revision 3.2
+Backend executable: linux-x86_64/gpu30CudaBackend
+Validation executable: linux-x86_64/gpu30CudaBackend-twophaseflux-validation
+Frontend/backend compatibility interface: G300 revision 5.0
 Build platform: Ubuntu 22.04, x86-64, glibc 2.34 minimum
 CUDA compiler: NVIDIA CUDA Toolkit 13.1, nvcc 13.1.115
 CUDA runtime: statically linked

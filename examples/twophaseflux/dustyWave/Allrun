@@ -36,12 +36,12 @@ restored=false
 restore_backend() { if [[ "${restored}" == false ]]; then ./Allrestore; restored=true; fi; }
 trap restore_backend EXIT
 ./Allwmake
-export GPU28_CUDA_BACKEND="${FOAM_USER_APPBIN}/gpu28CudaBackend"
-unset GPU28_VALIDATION_THERMAL_RESPONSE_TIME GPU28_VALIDATION_GAS_HEAT_CAPACITY
-export GPU28_VALIDATION_PARTICLE_RESPONSE_TIME="$(read_dictionary_entry gpuResidentParticleResponseTime constant/ugkwpProperties)"
+export GPU30_CUDA_BACKEND="${FOAM_USER_APPBIN}/gpu30CudaBackend"
+unset GPU30_VALIDATION_THERMAL_RESPONSE_TIME GPU30_VALIDATION_GAS_HEAT_CAPACITY
+export GPU30_VALIDATION_PARTICLE_RESPONSE_TIME="$(read_dictionary_entry gpuResidentParticleResponseTime constant/ugkwpProperties)"
 blockMesh > log.blockMesh 2>&1
-/usr/bin/time -f 'elapsed_seconds=%e' -o runtime.gpu2.8 \
-    "${FOAM_USER_APPBIN}/GpuGkp" > log.gpu2.8 2>&1
+/usr/bin/time -f 'elapsed_seconds=%e' -o runtime.gpu \
+    "${FOAM_USER_APPBIN}/GpuGkp" > log.gpu 2>&1
 PYTHONDONTWRITEBYTECODE=1 python3 postprocess.py
 restore_backend
 trap - EXIT

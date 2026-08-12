@@ -61,6 +61,12 @@ dSigma          0.3;
 
 parcelMass      5e-09;
 
+// GPU 3.0 weighted-parcel controls.  Equal values preserve the accepted
+// release-case injection loading and legacy restart interpretation.
+injectionParcelMass  5e-09;
+
+legacyRestartParcelMass  5e-09;
+
 gpuResidentCollisionalPressure true;
 
 gpuResidentCollisionalRestitution 0.9;
@@ -85,11 +91,8 @@ gpuCsrCellLocalPath true;
 
 gpuCsrHeavyReduction true;
 
-gpuCsrHeavyCellThreshold 1024;
-
-gpuCsrHeavyTileParticles 1024;
-
-gpuCsrHeavyWorkerBlocksPerSM 4;
+// Dynamic CUDA block exponent: B = 2^bn threads.
+bn 8;
 
 gpuCsrWarpAggregatedBinning true;
 

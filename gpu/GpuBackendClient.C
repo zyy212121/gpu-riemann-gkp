@@ -206,7 +206,7 @@ int finishNoPayload(ClientState* state)
 
 std::string backendExecutablePath()
 {
-    if (const char* configured = std::getenv("GPU28_CUDA_BACKEND"))
+    if (const char* configured = std::getenv("GPU30_CUDA_BACKEND"))
     {
         if (*configured != '\0')
         {
@@ -218,13 +218,13 @@ std::string backendExecutablePath()
     const ssize_t length = ::readlink("/proc/self/exe", executable, PATH_MAX);
     if (length <= 0)
     {
-        return "gpu28CudaBackend";
+        return "gpu30CudaBackend";
     }
     executable[length] = '\0';
     std::string path(executable);
     const std::size_t slash = path.find_last_of('/');
     return (slash == std::string::npos ? std::string() : path.substr(0, slash + 1))
-         + "gpu28CudaBackend";
+         + "gpu30CudaBackend";
 }
 
 bool spawnBackend(ClientState& state)
@@ -289,7 +289,7 @@ extern "C" const char* ugkwpGpuResidentStrictLastError()
 extern "C" int ugkwpGpuResidentStrictCreate
 (
     int nCells, int nFaces, int nInternalFaces, int nCellPlanes,
-    int particleCapacity, int maxFaceWalkHops, double parcelMass,
+    int particleCapacity, int maxFaceWalkHops, double injectionParcelMass,
     unsigned long long rngSeed, double gammaGas, double Rgas,
     double rhoSolid, int solveParticleTemperature,
     double particleThermalRho, double particleCp, double gasMu,
@@ -309,8 +309,10 @@ extern "C" int ugkwpGpuResidentStrictCreate
     double turbulentPrandtl, double waleCw, double smagorinskyCs,
     double maxDiffusionNumber, int csrCellLocalPathEnabled,
     int csrHeavyReductionEnabled,
-    int csrHeavyCellThreshold, int csrHeavyTileParticles,
-    int csrHeavyWorkerBlocksPerSm, int csrWarpAggregatedBinning,
+    int blockExponent, int csrWarpAggregatedBinning,
+    int dragModel, double dragParameter0, double dragParameter1,
+    double dragParameter2, double dragParameter3,
+    double gravityX, double gravityY, double gravityZ,
     void** handle
 )
 {
@@ -354,13 +356,21 @@ extern "C" int ugkwpGpuResidentStrictCreate
      || maxDiffusionNumber <= 0.0
      || (csrCellLocalPathEnabled != 0 && csrCellLocalPathEnabled != 1)
      || (csrHeavyReductionEnabled != 0 && csrHeavyReductionEnabled != 1)
-     || csrHeavyCellThreshold <= 0
-     || csrHeavyTileParticles < 256
-     || csrHeavyWorkerBlocksPerSm <= 0
-     || csrHeavyWorkerBlocksPerSm > 32
+     || blockExponent < 5
+     || blockExponent > 8
      || (csrWarpAggregatedBinning != 0 && csrWarpAggregatedBinning != 1)
      || (!csrCellLocalPathEnabled
       && (csrHeavyReductionEnabled || csrWarpAggregatedBinning))
+     || dragModel < 0
+     || dragModel > 1
+     || !std::isfinite(dragParameter0)
+     || !std::isfinite(dragParameter1)
+     || !std::isfinite(dragParameter2)
+     || !std::isfinite(dragParameter3)
+     || (dragModel == 1 && dragParameter0 <= 0.0)
+     || !std::isfinite(gravityX)
+     || !std::isfinite(gravityY)
+     || !std::isfinite(gravityZ)
      || (jammingPressureEnabled != 0 && jammingPressureEnabled != 1)
      || packingProjectionIterations < 1
      || (jammingPressureEnabled != 0
@@ -385,7 +395,7 @@ extern "C" int ugkwpGpuResidentStrictCreate
     const CreateArgs args
     {
         nCells, nFaces, nInternalFaces, nCellPlanes, particleCapacity,
-        maxFaceWalkHops, parcelMass, rngSeed, gammaGas, Rgas, rhoSolid,
+        maxFaceWalkHops, injectionParcelMass, rngSeed, gammaGas, Rgas, rhoSolid,
         solveParticleTemperature, particleThermalRho, particleCp, gasMu,
         gasPr, particleDiameterFallback, particleDiameterMin,
         particleDiameterMax, particleDiameterSigma, injectionTheta, rhoMin,
@@ -399,9 +409,11 @@ extern "C" int ugkwpGpuResidentStrictCreate
         gasEntropyFixCoefficient, lesDeltaCoeff, turbulentPrandtl,
         waleCw, smagorinskyCs, maxDiffusionNumber,
         csrCellLocalPathEnabled, csrHeavyReductionEnabled,
-        csrHeavyCellThreshold,
-        csrHeavyTileParticles, csrHeavyWorkerBlocksPerSm,
-        csrWarpAggregatedBinning
+        blockExponent,
+        csrWarpAggregatedBinning,
+        dragModel, 0,
+        dragParameter0, dragParameter1, dragParameter2, dragParameter3,
+        gravityX, gravityY, gravityZ
     };
     if (!startRequest(state, Op::create, sizeof(args)) || !sendObject(state->fd, args))
     {
@@ -425,6 +437,9 @@ extern "C" int ugkwpGpuResidentStrictCreate
 extern "C" int ugkwpGpuResidentStrictUploadMesh
 (
     void* handle, const int* faceOwner, const int* faceNeighbour,
+    const int* facePeriodicPair,
+    const double* facePeriodicDx, const double* facePeriodicDy,
+    const double* facePeriodicDz,
     const double* V, const double* Cx, const double* Cy, const double* Cz,
     const double* faceCx, const double* faceCy, const double* faceCz,
     const double* Sfx, const double* Sfy, const double* Sfz,
@@ -440,15 +455,18 @@ extern "C" int ugkwpGpuResidentStrictUploadMesh
     ClientState* s = static_cast<ClientState*>(handle);
     if (s == nullptr) return fail("invalid GPU backend client handle");
     std::uint64_t bytes = 0;
-    if (!addArrays(bytes, s->nFaces, sizeof(int), 2)
+    if (!addArrays(bytes, s->nFaces, sizeof(int), 3)
      || !addArrays(bytes, s->nCells, sizeof(double), 5)
-     || !addArrays(bytes, s->nFaces, sizeof(double), 9)
+     || !addArrays(bytes, s->nFaces, sizeof(double), 12)
      || !addArrays(bytes, s->nCells, sizeof(int), 2)
      || !addArrays(bytes, s->nCellPlanes, sizeof(int), 3)
      || !addArrays(bytes, s->nCellPlanes, sizeof(double), 6)
      || !startRequest(s, Op::uploadMesh, bytes)) return -1;
 #define SEND(P,N) do { if (!sendArray(s->fd, (P), (N))) return -1; } while (false)
     SEND(faceOwner, s->nFaces); SEND(faceNeighbour, s->nFaces);
+    SEND(facePeriodicPair, s->nFaces);
+    SEND(facePeriodicDx, s->nFaces); SEND(facePeriodicDy, s->nFaces);
+    SEND(facePeriodicDz, s->nFaces);
     SEND(V, s->nCells); SEND(Cx, s->nCells); SEND(Cy, s->nCells);
     SEND(Cz, s->nCells); SEND(faceCx, s->nFaces); SEND(faceCy, s->nFaces);
     SEND(faceCz, s->nFaces); SEND(Sfx, s->nFaces); SEND(Sfy, s->nFaces);

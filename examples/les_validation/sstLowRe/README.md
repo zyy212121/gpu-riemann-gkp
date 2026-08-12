@@ -1,7 +1,7 @@
 # Explicit GPU k-omega SST smoke test
 
 This 64-cell wall-driven channel is a short implementation smoke test for
-the GPU2.8 RAS path.  It deliberately uses standard OpenFOAM files:
+the GPU 3.0 RAS path.  It deliberately uses standard OpenFOAM files:
 
 - `constant/physicalProperties`
 - `constant/momentumTransport` with `simulationType RAS` and `kOmegaSST`

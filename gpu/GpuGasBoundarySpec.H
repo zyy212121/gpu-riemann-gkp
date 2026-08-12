@@ -16,7 +16,8 @@ enum class PatchGeometry : int
     symmetry = 1,
     wall = 2,
     processor = 3,
-    empty = 4
+    empty = 4,
+    cyclic = 5
 };
 
 enum class ScalarOperator : int

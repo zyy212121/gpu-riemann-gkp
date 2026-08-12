@@ -27,7 +27,7 @@ def scalar_values(path: Path) -> list[float]:
 
 def main() -> None:
     log = (ROOT / "log.solver").read_text(encoding="utf-8", errors="replace")
-    if "GPU2.8: separated-backend explicit GPU turbulence solver" not in log:
+    if "GPU-Riemann-GKP 3.0: weighted-parcel configurable-block dynamic-heavy separated-backend GPU solver" not in log:
         raise RuntimeError("new solver identity is absent from log")
     if "FOAM FATAL" in log or "CUDA" in log and "failed:" in log:
         raise RuntimeError("solver log contains a fatal error")

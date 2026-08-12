@@ -12,13 +12,13 @@ if [[ "${1:-}" == "--check" ]]; then
     exit 0
 fi
 [[ $# -eq 0 ]] || { echo "用法：./Allrun [--check]" >&2; exit 2; }
-if pgrep -f '(^|/)GpuGkp([[:space:]]|$)|(^|/)gpu28CudaBackend([[:space:]]|$)' >/dev/null; then
-    echo "错误：已有 GPU2.8 计算正在运行。" >&2
+if pgrep -f '(^|/)GpuGkp([[:space:]]|$)|(^|/)gpu30CudaBackend([[:space:]]|$)' >/dev/null; then
+    echo "错误：已有 GPU 3.0 计算正在运行。" >&2
     exit 1
 fi
 ./Allclean
-export GPU28_CUDA_BACKEND="${FOAM_USER_APPBIN}/gpu28CudaBackend"
+export GPU30_CUDA_BACKEND="${FOAM_USER_APPBIN}/gpu30CudaBackend"
 blockMesh > log.blockMesh 2>&1
-/usr/bin/time -f 'elapsed_seconds=%e' -o runtime.gpu2.8 \
-    "${FOAM_USER_APPBIN}/GpuGkp" > log.gpu2.8 2>&1
+/usr/bin/time -f 'elapsed_seconds=%e' -o runtime.gpu \
+    "${FOAM_USER_APPBIN}/GpuGkp" > log.gpu 2>&1
 PYTHONDONTWRITEBYTECODE=1 python3 postprocess.py

@@ -16,13 +16,11 @@ gpuResidentMaxFaceWalkHops 32;
 gpuResidentCourantUpdateInterval 100;
 gpuResidentMaxDeltaTGrowth 1.0;
 
-// Explicit sealed GPU2.8 L1 particle path.  E1/E2 are validation variants,
-// not defaults for these physical reference cases.
+// Explicit production L1 particle path.  E1/E2 are validation variants,
+// while this physical reference case retains the sealed L1 route.
 gpuCsrCellLocalPath true;
 gpuCsrHeavyReduction false;
-gpuCsrHeavyCellThreshold 4096;
-gpuCsrHeavyTileParticles 4096;
-gpuCsrHeavyWorkerBlocksPerSM 4;
+bn 8;
 gpuCsrWarpAggregatedBinning false;
 
 rhoS 1000;
@@ -31,11 +29,10 @@ dMin 0.0001;
 dMax 0.0001;
 dSigma 0;
 parcelMass 5.0000000000000004e-06;
+injectionParcelMass 5.0000000000000004e-06;
+legacyRestartParcelMass 5.0000000000000004e-06;
 
-gpuResidentDragModel SchillerNaumann;
-gpuResidentParticleResponseTime 1;
-gpuResidentHeatTransferModel RanzMarshall;
-gpuResidentParticleThermalResponseTime 1;
+dragModel SchillerNaumann;
 
 
 gpuResidentCollisionalPressure false;

@@ -4,5 +4,5 @@ set -euo pipefail
 find "${case_dir}" -maxdepth 1 -mindepth 1 -type d -regextype posix-extended \
     -regex '.*/[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?' ! -name 0 -exec rm -rf -- {} +
 rm -rf -- "${case_dir}/constant/polyMesh" "${case_dir}/__pycache__"
-rm -f -- "${case_dir}/log.blockMesh" "${case_dir}/log.gpu2.8" "${case_dir}/runtime.gpu2.8" \
-    "${case_dir}/check_windsand.json" "${case_dir}/ACTIVE_GPU28_BINARY.md" "${case_dir}/validation_data.csv" "${case_dir}/验证结果.png"
+rm -f -- "${case_dir}/log.blockMesh" "${case_dir}/log.gpu" "${case_dir}/runtime.gpu" \
+    "${case_dir}/check_windsand.json" "${case_dir}/ACTIVE_GPU30_BINARY.md" "${case_dir}/validation_data.csv" "${case_dir}/验证结果.png"

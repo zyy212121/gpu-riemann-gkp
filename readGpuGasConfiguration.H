@@ -4,7 +4,7 @@
 // User-facing gas configuration follows OpenFOAM case semantics:
 //   physicalProperties  -> ideal-gas thermodynamics and molecular transport
 //   fvSchemes           -> flux, spatial reconstruction, and time integration
-//   fvSolution/GPU2_8   -> solver safeguards that are not discretisation
+//   fvSolution/GpuGkp   -> solver safeguards that are not discretisation
 //   momentumTransport   -> laminar/LES selection
 //
 // constant/gksProperties remains READ_IF_PRESENT only as a migration bridge
@@ -60,13 +60,40 @@ IOdictionary momentumTransportProperties
 const dictionary& fvSchemesDict = mesh.schemes().dict();
 const dictionary& fvSolutionDict = mesh.solution().dict();
 const dictionary* gpuSolutionControls = nullptr;
-if (fvSolutionDict.found("GPU2_8"))
+const bool hasGpuGkpControls = fvSolutionDict.found("GpuGkp");
+const bool hasGpu28Controls = fvSolutionDict.found("GPU2_8");
+const bool hasGpu26Controls = fvSolutionDict.found("GPU2_6");
+const label gpuControlBlockCount =
+    label(hasGpuGkpControls)
+  + label(hasGpu28Controls)
+  + label(hasGpu26Controls);
+
+if (gpuControlBlockCount > 1)
+{
+    FatalErrorInFunction
+        << "Ambiguous solver controls in system/fvSolution. "
+        << "Define only system/fvSolution/GpuGkp and remove the "
+        << "deprecated GPU2_8 and GPU2_6 aliases."
+        << exit(FatalError);
+}
+
+if (hasGpuGkpControls)
+{
+    gpuSolutionControls = &fvSolutionDict.subDict("GpuGkp");
+}
+else if (hasGpu28Controls)
 {
     gpuSolutionControls = &fvSolutionDict.subDict("GPU2_8");
+    WarningInFunction
+        << "Deprecated fvSolution control dictionary GPU2_8 detected. "
+        << "Rename it to GpuGkp." << endl;
 }
-else if (fvSolutionDict.found("GPU2_6"))
+else if (hasGpu26Controls)
 {
     gpuSolutionControls = &fvSolutionDict.subDict("GPU2_6");
+    WarningInFunction
+        << "Deprecated fvSolution control dictionary GPU2_6 detected. "
+        << "Rename it to GpuGkp." << endl;
 }
 
 const bool openFoamGasProperties = !physicalProperties.empty();
@@ -92,7 +119,7 @@ if (openFoamGasProperties)
     )
     {
         FatalErrorInFunction
-            << "GPU2.8 currently supports the OpenFOAM thermo combination "
+            << "GpuGkp currently supports the OpenFOAM thermo combination "
             << "equationOfState=perfectGas, thermo=hConst, transport=const, "
             << "energy=sensibleInternalEnergy. Current thermoType is "
             << thermoType << exit(FatalError);
@@ -132,8 +159,8 @@ else
     {
         FatalErrorInFunction
             << "Missing constant/physicalProperties. Historical cases may "
-            << "temporarily use constant/gksProperties, but new GPU2.8 "
-            << "cases must use OpenFOAM physicalProperties."
+            << "temporarily use constant/gksProperties, but new cases must "
+            << "use OpenFOAM physicalProperties."
             << exit(FatalError);
     }
     WarningInFunction
@@ -198,13 +225,13 @@ if (!finiteScalar(Rgas.value()) || Rgas.value() <= SMALL)
 if (!finiteScalar(rhoMinG.value()) || rhoMinG.value() <= SMALL)
 {
     FatalErrorInFunction
-        << "fvSolution/GPU2_8 rhoMin must be positive. Current rhoMin = "
+        << "fvSolution/GpuGkp rhoMin must be positive. Current rhoMin = "
         << rhoMinG.value() << exit(FatalError);
 }
 if (!finiteScalar(TgasMinG.value()) || TgasMinG.value() <= scalar(0))
 {
     FatalErrorInFunction
-        << "fvSolution/GPU2_8 TMin must be positive. Current TMin = "
+        << "fvSolution/GpuGkp TMin must be positive. Current TMin = "
         << TgasMinG.value() << exit(FatalError);
 }
 if (!finiteScalar(muG.value()) || muG.value() < scalar(0))
@@ -259,7 +286,7 @@ if (openFoamGasNumerics)
     )
     {
         FatalErrorInFunction
-            << "GPU2.8 currently requires gradSchemes/default "
+            << "GpuGkp currently requires gradSchemes/default "
             << "'Gauss linear' because that is the resident Green-Gauss "
             << "operator implemented on the GPU."
             << exit(FatalError);
@@ -280,7 +307,7 @@ if (openFoamGasNumerics)
     )
     {
         FatalErrorInFunction
-            << "GPU2.8 currently requires "
+            << "GpuGkp currently requires "
             << "interpolationSchemes/default 'linear'."
             << exit(FatalError);
     }
@@ -297,7 +324,7 @@ if (openFoamGasNumerics)
     )
     {
         FatalErrorInFunction
-            << "GPU2.8 currently requires snGradSchemes/default "
+            << "GpuGkp currently requires snGradSchemes/default "
             << "'corrected'."
             << exit(FatalError);
     }
@@ -321,7 +348,7 @@ if (openFoamGasNumerics)
     )
     {
         FatalErrorInFunction
-            << "GPU2.8 currently requires laplacianSchemes/default "
+            << "GpuGkp currently requires laplacianSchemes/default "
             << "'Gauss linear corrected'."
             << exit(FatalError);
     }
@@ -389,7 +416,7 @@ if (openFoamGasNumerics)
     if (divViscous != "linear")
     {
         FatalErrorInFunction
-            << "GPU2.8 currently requires "
+            << "GpuGkp currently requires "
             << "div(((rho*nuEff)*dev2(T(grad(U))))) 'Gauss linear'."
             << exit(FatalError);
     }
@@ -605,7 +632,7 @@ else
 if (!gasRobustFallback && gasFluxScheme >= 4)
 {
     FatalErrorInFunction
-        << "fvSolution/GPU2_8 robustFallback must remain true for "
+        << "fvSolution/GpuGkp robustFallback must remain true for "
         << "contact-resolving and AUSM-family fluxes."
         << exit(FatalError);
 }
@@ -714,7 +741,7 @@ if (!momentumTransportProperties.empty())
             if (f3)
             {
                 FatalErrorInFunction
-                    << "GPU2.8CHTSST implements the smooth-wall OpenFOAM-10 "
+                    << "GpuGkp implements the smooth-wall OpenFOAM-10 "
                     << "kOmegaSST model and therefore requires F3=false."
                     << exit(FatalError);
             }
@@ -837,7 +864,7 @@ if (!finiteScalar(smagorinskyCs) || smagorinskyCs < scalar(0))
 if (!finiteScalar(maxDiffusionNumber) || maxDiffusionNumber <= SMALL)
 {
     FatalErrorInFunction
-        << "fvSolution/GPU2_8 maxDiffusionNumber must be positive."
+        << "fvSolution/GpuGkp maxDiffusionNumber must be positive."
         << exit(FatalError);
 }
 if

@@ -48,7 +48,7 @@ figure, axis = plt.subplots(figsize=(10.0, 8.0))
 positions = [0.0, 1.0]
 width = 0.34
 axis.bar([value - width / 2 for value in positions], exact, width=width, color="white", edgecolor="black", linewidth=1.5, label="OpenFOAM analytical")
-axis.bar([value + width / 2 for value in positions], numerical, width=width, color="#C44E52", edgecolor="black", linewidth=1.5, label="GPU2.8 numerical")
+axis.bar([value + width / 2 for value in positions], numerical, width=width, color="#C44E52", edgecolor="black", linewidth=1.5, label="GPU-Riemann-GKP")
 axis.set_xticks(positions, ["Trace-free", "Compressible"])
 axis.set_ylabel(r"Eddy viscosity $\nu_t$ ($\mathrm{m^2\,s^{-1}}$)")
 axis.tick_params(top=True, right=True, length=6, width=1.0)

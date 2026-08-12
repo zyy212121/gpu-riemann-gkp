@@ -8,9 +8,9 @@
 namespace ugkwpGpuIpc
 {
 
-static constexpr std::uint32_t magic = 0x47553238U; // "GU28"
-static constexpr std::uint16_t protocolMajor = 3;
-static constexpr std::uint16_t protocolMinor = 2;
+static constexpr std::uint32_t magic = 0x47333030U; // "G300"
+static constexpr std::uint16_t protocolMajor = 5;
+static constexpr std::uint16_t protocolMinor = 0;
 static constexpr std::uint64_t maxPayloadBytes = 32ULL*1024ULL*1024ULL*1024ULL;
 
 enum class Op : std::uint32_t
@@ -108,7 +108,7 @@ struct CreateArgs
     std::int32_t nCellPlanes;
     std::int32_t particleCapacity;
     std::int32_t maxFaceWalkHops;
-    double parcelMass;
+    double injectionParcelMass;
     std::uint64_t rngSeed;
     double gammaGas;
     double Rgas;
@@ -152,10 +152,17 @@ struct CreateArgs
     double maxDiffusionNumber;
     std::int32_t csrCellLocalPathEnabled;
     std::int32_t csrHeavyReductionEnabled;
-    std::int32_t csrHeavyCellThreshold;
-    std::int32_t csrHeavyTileParticles;
-    std::int32_t csrHeavyWorkerBlocksPerSm;
+    std::int32_t blockExponent;
     std::int32_t csrWarpAggregatedBinning;
+    std::int32_t dragModel;
+    std::int32_t dragReserved;
+    double dragParameter0;
+    double dragParameter1;
+    double dragParameter2;
+    double dragParameter3;
+    double gravityX;
+    double gravityY;
+    double gravityZ;
 };
 
 struct CountArgs
@@ -240,7 +247,7 @@ inline bool addArrayBytes(std::uint64_t& total, const std::uint64_t count)
 
 static_assert(sizeof(RequestHeader) == 24, "unexpected request header ABI");
 static_assert(sizeof(ResponseHeader) == 24, "unexpected response header ABI");
-static_assert(sizeof(CreateArgs) == 360, "unexpected create payload ABI");
+static_assert(sizeof(CreateArgs) == 416, "unexpected create payload ABI");
 static_assert(sizeof(CountArgs) == 4, "unexpected count payload ABI");
 static_assert(sizeof(ScheduledInletArgs) == 32, "unexpected inlet payload ABI");
 static_assert(sizeof(AdvanceArgs) == 16, "unexpected advance payload ABI");

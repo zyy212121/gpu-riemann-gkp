@@ -3,6 +3,7 @@
 
 #include "fvCFD.H"
 #include "GpuGasBoundarySpec.H"
+#include "cyclicPolyPatch.H"
 #include "emptyPolyPatch.H"
 #include "inletOutletFvPatchFields.H"
 #include "processorPolyPatch.H"
@@ -17,6 +18,7 @@
 #endif
 
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <limits>
 #include <sstream>
@@ -34,7 +36,7 @@ extern "C" int ugkwpGpuResidentStrictCreate
     int nCellPlanes,
     int particleCapacity,
     int maxFaceWalkHops,
-    double parcelMass,
+    double injectionParcelMass,
     unsigned long long rngSeed,
     double gammaGas,
     double Rgas,
@@ -78,10 +80,16 @@ extern "C" int ugkwpGpuResidentStrictCreate
     double maxDiffusionNumber,
     int csrCellLocalPathEnabled,
     int csrHeavyReductionEnabled,
-    int csrHeavyCellThreshold,
-    int csrHeavyTileParticles,
-    int csrHeavyWorkerBlocksPerSm,
+    int blockExponent,
     int csrWarpAggregatedBinning,
+    int dragModel,
+    double dragParameter0,
+    double dragParameter1,
+    double dragParameter2,
+    double dragParameter3,
+    double gravityX,
+    double gravityY,
+    double gravityZ,
     void** handle
 );
 
@@ -90,6 +98,10 @@ extern "C" int ugkwpGpuResidentStrictUploadMesh
     void* handle,
     const int* faceOwner,
     const int* faceNeighbour,
+    const int* facePeriodicPair,
+    const double* facePeriodicDx,
+    const double* facePeriodicDy,
+    const double* facePeriodicDz,
     const double* V,
     const double* Cx,
     const double* Cy,
@@ -339,7 +351,7 @@ protected:
     label hostMirrorCells_;
     label hostMirrorFaces_;
     const fvMesh* residentMesh_;
-    scalar parcelMass_;
+    scalar legacyRestartParcelMass_;
 
 public:
     GpuResidentStrictBase()
@@ -348,7 +360,7 @@ public:
         hostMirrorCells_(0),
         hostMirrorFaces_(0),
         residentMesh_(nullptr),
-        parcelMass_(0)
+        legacyRestartParcelMass_(0)
     {}
 
     ~GpuResidentStrictBase()
@@ -383,7 +395,8 @@ protected:
         const volScalarField& theta,
         const volScalarField& Tp,
         const volScalarField& dMeanCell,
-        const scalar parcelMass,
+        const scalar injectionParcelMass,
+        const scalar legacyRestartParcelMass,
         const label particleCapacity,
         const label maxFaceWalkHops,
         const unsigned long long rngSeed,
@@ -420,6 +433,9 @@ protected:
         const scalar thetaMin,
         const scalar TpMin,
         const scalar TpMax,
+        const label dragModel,
+        const FixedList<scalar, 4>& dragParameters,
+        const vector& gravity,
         const bool enableParticleModule,
         const dictionary* particleWallProps
     )
@@ -438,7 +454,7 @@ protected:
         hostMirrorCells_ = nCells;
         hostMirrorFaces_ = nFaces;
         residentMesh_ = &mesh;
-        parcelMass_ = parcelMass;
+        legacyRestartParcelMass_ = legacyRestartParcelMass;
 
         if (particleCapacity < 0)
         {
@@ -576,29 +592,13 @@ protected:
                 "gpuCsrHeavyReduction",
                 false
             );
-        const label csrHeavyCellThreshold =
+        const label blockExponent =
             particleWallProps == nullptr
-          ? label(4096)
+          ? label(8)
           : particleWallProps->lookupOrDefault<label>
             (
-                "gpuCsrHeavyCellThreshold",
-                label(4096)
-            );
-        const label csrHeavyTileParticles =
-            particleWallProps == nullptr
-          ? label(4096)
-          : particleWallProps->lookupOrDefault<label>
-            (
-                "gpuCsrHeavyTileParticles",
-                label(4096)
-            );
-        const label csrHeavyWorkerBlocksPerSm =
-            particleWallProps == nullptr
-          ? label(4)
-          : particleWallProps->lookupOrDefault<label>
-            (
-                "gpuCsrHeavyWorkerBlocksPerSM",
-                label(4)
+                "bn",
+                label(8)
             );
         const bool csrWarpAggregatedBinning =
             particleWallProps != nullptr
@@ -619,27 +619,11 @@ protected:
                 << "require gpuCsrCellLocalPath true"
                 << exit(FatalError);
         }
-        if (csrHeavyCellThreshold <= 0)
+        if (blockExponent < 5 || blockExponent > 8)
         {
             FatalErrorInFunction
-                << "gpuCsrHeavyCellThreshold must be positive. Current value = "
-                << csrHeavyCellThreshold << exit(FatalError);
-        }
-        if (csrHeavyTileParticles < 256)
-        {
-            FatalErrorInFunction
-                << "gpuCsrHeavyTileParticles must be at least 256. Current value = "
-                << csrHeavyTileParticles << exit(FatalError);
-        }
-        if
-        (
-            csrHeavyWorkerBlocksPerSm <= 0
-         || csrHeavyWorkerBlocksPerSm > 32
-        )
-        {
-            FatalErrorInFunction
-                << "gpuCsrHeavyWorkerBlocksPerSM must be in [1, 32]. Current value = "
-                << csrHeavyWorkerBlocksPerSm << exit(FatalError);
+                << "bn must be one of 5, 6, 7, or 8. Current value = "
+                << blockExponent << exit(FatalError);
         }
 
         if (enableParticleModule)
@@ -648,9 +632,9 @@ protected:
                 << csrCellLocalPathEnabled
                 << " heavyReduction="
                 << csrHeavyReductionEnabled
-                << " heavyCellThreshold=" << csrHeavyCellThreshold
-                << " tileParticles=" << csrHeavyTileParticles
-                << " workerBlocksPerSM=" << csrHeavyWorkerBlocksPerSm
+                << " bn=" << blockExponent
+                << " blockThreads=" << (label(1) << blockExponent)
+                << " heavyPolicy=occupancyDynamic"
                 << " warpAggregatedBinning=" << csrWarpAggregatedBinning
                 << endl;
         }
@@ -663,7 +647,7 @@ protected:
             int(nCellPlanes),
             int(particleCapacity),
             int(maxFaceWalkHops),
-            parcelMass,
+            injectionParcelMass,
             rngSeed,
             gammaGas,
             RgasValue,
@@ -707,10 +691,16 @@ protected:
             maxDiffusionNumber,
             csrCellLocalPathEnabled ? 1 : 0,
             csrHeavyReductionEnabled ? 1 : 0,
-            int(csrHeavyCellThreshold),
-            int(csrHeavyTileParticles),
-            int(csrHeavyWorkerBlocksPerSm),
+            int(blockExponent),
             csrWarpAggregatedBinning ? 1 : 0,
+            int(dragModel),
+            dragParameters[0],
+            dragParameters[1],
+            dragParameters[2],
+            dragParameters[3],
+            gravity.x(),
+            gravity.y(),
+            gravity.z(),
             &raw
         );
 
@@ -767,7 +757,27 @@ protected:
                     {
                         FatalErrorInFunction
                             << "Invalid GPU resident particle restart count: "
-                            << restartPath << exit(FatalError);
+                        << restartPath << exit(FatalError);
+                    }
+                }
+                else if
+                (
+                    restartHeader == "GPU2_PARTICLES_V5_BIN"
+                 || restartHeader == "GPU3_PARTICLES_V1_BIN"
+                )
+                {
+                    label binaryChunkParticles = 0;
+                    if
+                    (
+                        !(restartHeaderStream
+                            >> restartParticleCount
+                            >> binaryChunkParticles)
+                     || binaryChunkParticles <= 0
+                    )
+                    {
+                        FatalErrorInFunction
+                            << "Invalid GPU resident binary particle restart "
+                            << "header: " << restartPath << exit(FatalError);
                     }
                 }
                 else
@@ -775,6 +785,15 @@ protected:
                     FatalErrorInFunction
                         << "Unsupported GPU resident particle restart format: "
                         << restartPath << exit(FatalError);
+                }
+                if (restartParticleCount > particleCapacity)
+                {
+                    FatalErrorInFunction
+                        << "GPU resident particle restart count exceeds "
+                        << "gpuResidentParticleCapacity: count="
+                        << restartParticleCount << ", capacity="
+                        << particleCapacity << ", file=" << restartPath
+                        << exit(FatalError);
                 }
             }
 
@@ -846,6 +865,7 @@ protected:
         const scalar waleCw,
         const scalar smagorinskyCs,
         const scalar maxDiffusionNumber,
+        const vector& gravity,
         const scalar rhoMin,
         const scalar TgasMin
     )
@@ -925,10 +945,16 @@ protected:
             maxDiffusionNumber,
             1,
             0,
-            4096,
-            4096,
-            4,
+            8,
             0,
+            0,
+            scalar(0),
+            scalar(0),
+            scalar(0),
+            scalar(0),
+            gravity.x(),
+            gravity.y(),
+            gravity.z(),
             &raw
         );
 
@@ -1379,6 +1405,28 @@ public:
         downloadGasBoundaryToHostMirror(rho, U, p, Tgas);
     }
 
+    template<class T>
+    void writeBinaryParticleBlock
+    (
+        std::ofstream& os,
+        const T* values,
+        const label count,
+        const char* fieldName,
+        const fileName& restartFile
+    ) const
+    {
+        const std::streamsize bytes =
+            static_cast<std::streamsize>(count)*sizeof(T);
+        os.write(reinterpret_cast<const char*>(values), bytes);
+        if (!os.good())
+        {
+            FatalErrorInFunction
+                << "Failed writing binary particle restart field "
+                << fieldName << " to " << restartFile
+                << exit(FatalError);
+        }
+    }
+
     label writeParticleRestartMirror(const Time& runTime) const
     {
         requireInitialised("writeParticleRestartMirror");
@@ -1461,7 +1509,11 @@ public:
         }
 
         const fileName restartFile = particleRestartFile(runTime);
-        std::ofstream os(restartFile.c_str());
+        std::ofstream os
+        (
+            restartFile.c_str(),
+            std::ios::out | std::ios::binary | std::ios::trunc
+        );
         if (!os.good())
         {
             FatalErrorInFunction
@@ -1469,17 +1521,56 @@ public:
                 << restartFile << exit(FatalError);
         }
 
-        os.setf(std::ios::scientific);
-        os.precision(std::numeric_limits<double>::max_digits10);
-        os  << "GPU2_PARTICLES_V4 " << nParticles << '\n';
-        for (label i = 0; i < nParticles; ++i)
+        if (sizeof(scalar) != 8 || sizeof(label) != 4)
         {
-            os  << px[i] << ' ' << py[i] << ' ' << pz[i] << ' '
-                << pux[i] << ' ' << puy[i] << ' ' << puz[i] << ' '
-                << pT[i] << ' ' << pTheta[i] << ' '
-                << pd[i] << ' '
-                << pCellId[i] << ' ' << pStatus[i] << ' '
-                << pRng[i] << ' ' << pOrigId[i] << '\n';
+            FatalErrorInFunction
+                << "GPU3 weighted binary restart requires 8-byte scalar "
+                << "and 4-byte label" << exit(FatalError);
+        }
+        const std::uint32_t endianMarker = 1u;
+        if (*reinterpret_cast<const unsigned char*>(&endianMarker) != 1u)
+        {
+            FatalErrorInFunction
+                << "GPU3 weighted binary restart requires a little-endian host"
+                << exit(FatalError);
+        }
+
+        const label binaryChunkParticles = 262144;
+        os << "GPU3_PARTICLES_V1_BIN "
+           << nParticles << ' ' << binaryChunkParticles << '\n';
+        for
+        (
+            label offset = 0;
+            offset < nParticles;
+            offset += binaryChunkParticles
+        )
+        {
+            const label count =
+                min(binaryChunkParticles, label(nParticles - offset));
+            const std::uint32_t chunkCount =
+                static_cast<std::uint32_t>(count);
+            writeBinaryParticleBlock(os, &chunkCount, 1, "chunkCount", restartFile);
+            writeBinaryParticleBlock(os, px.begin() + offset, count, "px", restartFile);
+            writeBinaryParticleBlock(os, py.begin() + offset, count, "py", restartFile);
+            writeBinaryParticleBlock(os, pz.begin() + offset, count, "pz", restartFile);
+            writeBinaryParticleBlock(os, pux.begin() + offset, count, "pux", restartFile);
+            writeBinaryParticleBlock(os, puy.begin() + offset, count, "puy", restartFile);
+            writeBinaryParticleBlock(os, puz.begin() + offset, count, "puz", restartFile);
+            writeBinaryParticleBlock(os, pT.begin() + offset, count, "pT", restartFile);
+            writeBinaryParticleBlock(os, pTheta.begin() + offset, count, "pTheta", restartFile);
+            writeBinaryParticleBlock(os, pd.begin() + offset, count, "pd", restartFile);
+            writeBinaryParticleBlock(os, pm.begin() + offset, count, "pm", restartFile);
+            writeBinaryParticleBlock(os, pCellId.begin() + offset, count, "pCellId", restartFile);
+            writeBinaryParticleBlock(os, pStatus.begin() + offset, count, "pStatus", restartFile);
+            writeBinaryParticleBlock(os, pRng.begin() + offset, count, "pRng", restartFile);
+            writeBinaryParticleBlock(os, pOrigId.begin() + offset, count, "pOrigId", restartFile);
+        }
+        os.flush();
+        if (!os.good())
+        {
+            FatalErrorInFunction
+                << "Failed finalising GPU3 weighted particle restart: "
+                << restartFile << exit(FatalError);
         }
 
         writeEpsGPrevRestartMirror(runTime);
@@ -1905,6 +1996,28 @@ protected:
         }
     }
 
+    template<class T>
+    void readBinaryParticleBlock
+    (
+        std::ifstream& is,
+        T* values,
+        const label count,
+        const char* fieldName,
+        const fileName& restartFile
+    )
+    {
+        const std::streamsize bytes =
+            static_cast<std::streamsize>(count)*sizeof(T);
+        is.read(reinterpret_cast<char*>(values), bytes);
+        if (!is || is.gcount() != bytes)
+        {
+            FatalErrorInFunction
+                << "Failed reading binary particle restart field "
+                << fieldName << " from " << restartFile
+                << exit(FatalError);
+        }
+    }
+
     void readParticleRestartMirrorIfPresent(const Time& runTime)
     {
         const fileName restartFile = particleRestartFile(runTime);
@@ -1913,19 +2026,46 @@ protected:
             return;
         }
 
-        std::ifstream is(restartFile.c_str());
+        std::ifstream is
+        (
+            restartFile.c_str(),
+            std::ios::in | std::ios::binary
+        );
         string restartHeader;
         label nParticles = 0;
+        if (!(is >> restartHeader >> nParticles) || nParticles < 0)
+        {
+            FatalErrorInFunction
+                << "Unsupported or invalid GPU resident particle restart "
+                << "format: " << restartFile << exit(FatalError);
+        }
+
+        label binaryChunkParticles = 0;
+        const bool legacyBinaryRestart =
+            restartHeader == "GPU2_PARTICLES_V5_BIN";
+        const bool weightedBinaryRestart =
+            restartHeader == "GPU3_PARTICLES_V1_BIN";
+        const bool binaryRestart =
+            legacyBinaryRestart || weightedBinaryRestart;
         if
         (
-            !(is >> restartHeader >> nParticles)
-         || restartHeader != "GPU2_PARTICLES_V4"
-         || nParticles < 0
+            restartHeader != "GPU2_PARTICLES_V4"
+         && !binaryRestart
         )
         {
             FatalErrorInFunction
                 << "Unsupported or invalid GPU resident particle restart "
                 << "format: " << restartFile << exit(FatalError);
+        }
+        if
+        (
+            binaryRestart
+         && (!(is >> binaryChunkParticles) || binaryChunkParticles <= 0)
+        )
+        {
+            FatalErrorInFunction
+                << "Invalid binary restart chunk count in "
+                << restartFile << exit(FatalError);
         }
 
         scalarField px(nParticles);
@@ -1937,37 +2077,149 @@ protected:
         scalarField pT(nParticles);
         scalarField pTheta(nParticles);
         scalarField pd(nParticles);
-        scalarField pm(nParticles, parcelMass_);
+        scalarField pm(nParticles, legacyRestartParcelMass_);
         labelList pCellId(nParticles);
         labelList pStatus(nParticles);
         List<unsigned long long> pRng(nParticles);
         List<unsigned long long> pOrigId(nParticles);
 
-        string line;
-        std::getline(is, line);
-        for (label i = 0; i < nParticles; ++i)
+        if (!binaryRestart)
         {
-            do
+            string line;
+            std::getline(is, line);
+            for (label i = 0; i < nParticles; ++i)
             {
-                std::getline(is, line);
-            }
-            while (line.empty() && is.good());
+                do
+                {
+                    std::getline(is, line);
+                }
+                while (line.empty() && is.good());
 
-            std::istringstream ls(line);
+                std::istringstream ls(line);
+                if
+                (
+                    !(
+                        ls  >> px[i] >> py[i] >> pz[i]
+                            >> pux[i] >> puy[i] >> puz[i]
+                            >> pT[i] >> pTheta[i] >> pd[i]
+                            >> pCellId[i] >> pStatus[i]
+                            >> pRng[i] >> pOrigId[i]
+                     )
+                )
+                {
+                    FatalErrorInFunction
+                        << "Failed reading GPU resident particle restart mirror "
+                        << restartFile << " at particle " << i
+                        << exit(FatalError);
+                }
+            }
+        }
+        else
+        {
+            if (sizeof(scalar) != 8)
+            {
+                FatalErrorInFunction
+                    << "binary restart scalar width mismatch"
+                    << exit(FatalError);
+            }
+            if (sizeof(label) != 4)
+            {
+                FatalErrorInFunction
+                    << "binary restart label width mismatch"
+                    << exit(FatalError);
+            }
+            if (sizeof(unsigned long long) != 8)
+            {
+                FatalErrorInFunction
+                    << "binary restart unsigned width mismatch"
+                    << exit(FatalError);
+            }
+            const std::uint32_t endianMarker = 1u;
             if
             (
-                !(
-                    ls  >> px[i] >> py[i] >> pz[i]
-                        >> pux[i] >> puy[i] >> puz[i]
-                        >> pT[i] >> pTheta[i] >> pd[i]
-                        >> pCellId[i] >> pStatus[i]
-                        >> pRng[i] >> pOrigId[i]
-                 )
+                *reinterpret_cast<const unsigned char*>(&endianMarker)
+             != 1u
             )
             {
                 FatalErrorInFunction
-                    << "Failed reading GPU resident particle restart mirror "
-                    << restartFile << " at particle " << i
+                    << "binary restart requires a little-endian host"
+                    << exit(FatalError);
+            }
+
+            char newline = 0;
+            is.get(newline);
+            if (newline == '\r')
+            {
+                is.get(newline);
+            }
+            if (newline != '\n')
+            {
+                FatalErrorInFunction
+                    << "Invalid binary particle restart header terminator in "
+                    << restartFile << exit(FatalError);
+            }
+
+            label offset = 0;
+            while (offset < nParticles)
+            {
+                std::uint32_t chunkCount = 0u;
+                readBinaryParticleBlock
+                (
+                    is,
+                    &chunkCount,
+                    1,
+                    "binary restart chunk count",
+                    restartFile
+                );
+                const label remaining = nParticles - offset;
+                if
+                (
+                    chunkCount == 0u
+                 || chunkCount
+                  > static_cast<std::uint32_t>(binaryChunkParticles)
+                 || chunkCount > static_cast<std::uint32_t>(remaining)
+                )
+                {
+                    FatalErrorInFunction
+                        << "Invalid binary restart chunk count "
+                        << chunkCount << " at offset " << offset
+                        << " in " << restartFile << exit(FatalError);
+                }
+                const label count = static_cast<label>(chunkCount);
+                readBinaryParticleBlock(is, px.begin() + offset, count, "px", restartFile);
+                readBinaryParticleBlock(is, py.begin() + offset, count, "py", restartFile);
+                readBinaryParticleBlock(is, pz.begin() + offset, count, "pz", restartFile);
+                readBinaryParticleBlock(is, pux.begin() + offset, count, "pux", restartFile);
+                readBinaryParticleBlock(is, puy.begin() + offset, count, "puy", restartFile);
+                readBinaryParticleBlock(is, puz.begin() + offset, count, "puz", restartFile);
+                readBinaryParticleBlock(is, pT.begin() + offset, count, "pT", restartFile);
+                readBinaryParticleBlock(is, pTheta.begin() + offset, count, "pTheta", restartFile);
+                readBinaryParticleBlock(is, pd.begin() + offset, count, "pd", restartFile);
+                if (weightedBinaryRestart)
+                {
+                    readBinaryParticleBlock(is, pm.begin() + offset, count, "pm", restartFile);
+                }
+                readBinaryParticleBlock(is, pCellId.begin() + offset, count, "pCellId", restartFile);
+                readBinaryParticleBlock(is, pStatus.begin() + offset, count, "pStatus", restartFile);
+                readBinaryParticleBlock(is, pRng.begin() + offset, count, "pRng", restartFile);
+                readBinaryParticleBlock(is, pOrigId.begin() + offset, count, "pOrigId", restartFile);
+                offset += count;
+            }
+            if (is.peek() != std::char_traits<char>::eof())
+            {
+                FatalErrorInFunction
+                    << "Invalid binary restart trailing data in "
+                    << restartFile << exit(FatalError);
+            }
+        }
+
+        for (label i = 0; i < nParticles; ++i)
+        {
+            if (!std::isfinite(pm[i]) || pm[i] <= scalar(0))
+            {
+                FatalErrorInFunction
+                    << "Invalid particle statistical mass in " << restartFile
+                    << " at particle " << i << ": pm=" << pm[i]
                     << exit(FatalError);
             }
         }
@@ -2124,6 +2376,10 @@ protected:
 
         labelList faceOwner(nFaces);
         labelList faceNeighbour(nFaces, -1);
+        labelList facePeriodicPair(nFaces, -1);
+        scalarField facePeriodicDx(nFaces, scalar(0));
+        scalarField facePeriodicDy(nFaces, scalar(0));
+        scalarField facePeriodicDz(nFaces, scalar(0));
         scalarField Cx(nCells);
         scalarField Cy(nCells);
         scalarField Cz(nCells);
@@ -2252,9 +2508,90 @@ protected:
             const polyPatch& pp = mesh.boundaryMesh()[patchI];
             const fvsPatchScalarField& patchDelta =
                 mesh.deltaCoeffs().boundaryField()[patchI];
+            const fvsPatchScalarField& patchWeights =
+                mesh.surfaceInterpolation::weights().boundaryField()[patchI];
             forAll(patchDelta, i)
             {
                 deltaCoeffs[pp.start() + i] = patchDelta[i];
+            }
+
+            if (!isA<cyclicPolyPatch>(pp))
+            {
+                continue;
+            }
+
+            const cyclicPolyPatch& cpp =
+                refCast<const cyclicPolyPatch>(pp);
+            if (cpp.transform().transforms())
+            {
+                FatalErrorInFunction
+                    << "GPU2.9 serial pure-translation cyclic support does "
+                    << "not accept a rotational or scaled transform. Patch '"
+                    << pp.name() << "'." << exit(FatalError);
+            }
+            if (cpp.size() != cpp.nbrPatch().size())
+            {
+                FatalErrorInFunction
+                    << "GPU2.9 serial pure-translation cyclic support "
+                    << "requires one-to-one conformal face pairing. Patch '"
+                    << pp.name() << "' has " << cpp.size()
+                    << " faces and neighbour patch '" << cpp.nbrPatch().name()
+                    << "' has " << cpp.nbrPatch().size() << '.'
+                    << exit(FatalError);
+            }
+
+            forAll(cpp, patchFaceI)
+            {
+                const label faceI = cpp.start() + patchFaceI;
+                const label pairFaceI = cpp.transformGlobalFace(faceI);
+                if
+                (
+                    pairFaceI < nInternalFaces
+                 || pairFaceI >= nFaces
+                 || owner[pairFaceI] < 0
+                 || owner[pairFaceI] >= nCells
+                )
+                {
+                    FatalErrorInFunction
+                        << "Invalid serial cyclic pair for face " << faceI
+                        << " on patch '" << pp.name() << "'. Paired face = "
+                        << pairFaceI << exit(FatalError);
+                }
+
+                const vector mappedPairCentre =
+                    cpp.transform().transformPosition(faceCentres[pairFaceI]);
+                const scalar geometryTolerance =
+                    scalar(1e-8)
+                   *max
+                    (
+                        mag(faceCentres[faceI])
+                      + mag(faceCentres[pairFaceI]),
+                        scalar(1)
+                    );
+                if
+                (
+                    mag(mappedPairCentre - faceCentres[faceI])
+                        > geometryTolerance
+                 || mag(faceAreas[faceI] + faceAreas[pairFaceI])
+                        > scalar(1e-8)
+                         *max(magFaceAreas[faceI], scalar(1))
+                )
+                {
+                    FatalErrorInFunction
+                        << "GPU2.9 serial pure-translation cyclic face "
+                        << faceI << " on patch '" << pp.name()
+                        << " failed paired centre/area validation."
+                        << exit(FatalError);
+                }
+
+                const vector neighbourToLocal =
+                    faceCentres[faceI] - faceCentres[pairFaceI];
+                facePeriodicPair[faceI] = pairFaceI;
+                faceNeighbour[faceI] = owner[pairFaceI];
+                facePeriodicDx[faceI] = neighbourToLocal.x();
+                facePeriodicDy[faceI] = neighbourToLocal.y();
+                facePeriodicDz[faceI] = neighbourToLocal.z();
+                faceWeight[faceI] = patchWeights[patchFaceI];
             }
         }
 
@@ -2303,7 +2640,12 @@ protected:
                     if (patchI >= 0)
                     {
                         const polyPatch& pp = mesh.boundaryMesh()[patchI];
-                        if (isA<processorPolyPatch>(pp))
+                        if (isA<cyclicPolyPatch>(pp))
+                        {
+                            kind = 5;
+                            neighbor = faceNeighbour[faceI];
+                        }
+                        else if (isA<processorPolyPatch>(pp))
                         {
                             kind = 3;
                         }
@@ -2365,6 +2707,10 @@ protected:
                 handle_,
                 reinterpret_cast<const int*>(faceOwner.begin()),
                 reinterpret_cast<const int*>(faceNeighbour.begin()),
+                reinterpret_cast<const int*>(facePeriodicPair.begin()),
+                facePeriodicDx.begin(),
+                facePeriodicDy.begin(),
+                facePeriodicDz.begin(),
                 volumes.begin(),
                 Cx.begin(),
                 Cy.begin(),
@@ -2434,10 +2780,10 @@ protected:
                 gpu26boundary::PatchGeometry::standard
             );
 
-            if (pp.coupled())
+            if (pp.coupled() && !isA<cyclicPolyPatch>(pp))
             {
                 FatalErrorInFunction
-                    << "GPU2.8 is a serial resident solver and does not "
+                    << "GPU2.6 is a serial resident solver and does not "
                     << "implement coupled boundary transport. Patch '"
                     << pp.name() << "' has type '" << pp.type() << "'."
                     << exit(FatalError);
@@ -2474,6 +2820,13 @@ protected:
                 patchKind = static_cast<label>
                 (
                     gpu26boundary::PatchGeometry::processor
+                );
+            }
+            else if (isA<cyclicPolyPatch>(pp))
+            {
+                patchKind = static_cast<label>
+                (
+                    gpu26boundary::PatchGeometry::cyclic
                 );
             }
 
@@ -2589,7 +2942,7 @@ protected:
                 {
                     FatalErrorInFunction
                         << "OpenFOAM wall patch requires noSlip or fixedValue U"
-                        << " in GPU2.8. Patch '" << pp.name()
+                        << " in GPU2.6. Patch '" << pp.name()
                         << "' uses U type '"
                         << U.boundaryField()[patchI].type() << "'."
                         << exit(FatalError);
@@ -2618,7 +2971,7 @@ protected:
                         << rho.boundaryField()[patchI].type()
                         << ", p=" << p.boundaryField()[patchI].type()
                         << ", T=" << Tgas.boundaryField()[patchI].type()
-                        << ". GPU2.8 wall support is p zeroGradient, rho "
+                        << ". GPU2.6 wall support is p zeroGradient, rho "
                         << "zeroGradient/calculated, and T "
                         << "fixedValue/zeroGradient."
                         << exit(FatalError);
@@ -3141,6 +3494,7 @@ public:
         const scalar waleCw,
         const scalar smagorinskyCs,
         const scalar maxDiffusionNumber,
+        const vector& gravity,
         const scalar rhoMin,
         const scalar TgasMin
     )
@@ -3173,6 +3527,7 @@ public:
             waleCw,
             smagorinskyCs,
             maxDiffusionNumber,
+            gravity,
             rhoMin,
             TgasMin
         );
@@ -3289,7 +3644,8 @@ public:
         const volScalarField& theta,
         const volScalarField& Tp,
         const volScalarField& dMeanCell,
-        const scalar parcelMass,
+        const scalar injectionParcelMass,
+        const scalar legacyRestartParcelMass,
         const label particleCapacity,
         const label maxFaceWalkHops,
         const unsigned long long rngSeed,
@@ -3326,6 +3682,9 @@ public:
         const scalar thetaMin,
         const scalar TpMin,
         const scalar TpMax,
+        const label dragModel,
+        const FixedList<scalar, 4>& dragParameters,
+        const vector& gravity,
         const dictionary& ugkwpProps
     )
     {
@@ -3348,7 +3707,8 @@ public:
             theta,
             Tp,
             dMeanCell,
-            parcelMass,
+            injectionParcelMass,
+            legacyRestartParcelMass,
             particleCapacity,
             maxFaceWalkHops,
             rngSeed,
@@ -3385,6 +3745,9 @@ public:
             thetaMin,
             TpMin,
             TpMax,
+            dragModel,
+            dragParameters,
+            gravity,
             true,
             &ugkwpProps
         );

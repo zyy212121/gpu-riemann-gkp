@@ -9,7 +9,8 @@
 
 # GPU–Riemann–GKP
 
-Current release: **2.8.0** · [Changelog](CHANGELOG.md)
+Current release: **3.0.0** · [Changelog](CHANGELOG.md) ·
+[2.8 to 3.0 upgrade guide](docs/GPU30_UPGRADE_GUIDE.md)
 
 GPU–Riemann–GKP advances a compressible Eulerian gas phase with configurable Riemann fluxes and a Lagrangian particle phase with the gas-kinetic particle method (GKP). The solver keeps mesh topology, conservative gas fields, particle structure-of-arrays state, random state, coupling ledgers, and restart state on the GPU throughout each time-step sequence.
 
@@ -294,7 +295,7 @@ and evaluates the OpenFOAM 10 form
 
 This formulation uses the full symmetric-gradient invariant $\mathbf{S}:\mathbf{S}$ in the WALE denominator and the deviatoric invariant $\mathbf{S}^{d}:\mathbf{S}^{d}$ in the compressible Smagorinsky model.
 
-GPU2.8 also provides an explicit GPU-resident $k$-$\omega$ SST model. The transported conservative variables are $\rho k$ and $\rho\omega$:
+GPU 3.0 also provides an explicit GPU-resident $k$-$\omega$ SST model. The transported conservative variables are $\rho k$ and $\rho\omega$:
 
 ```math
 \frac{\partial(\rho k)}{\partial t}
@@ -635,7 +636,7 @@ cd GPU-Riemann-GKP
 
 ```text
 $FOAM_USER_APPBIN/GpuGkp
-$FOAM_USER_APPBIN/gpu28CudaBackend
+$FOAM_USER_APPBIN/gpu30CudaBackend
 ```
 
 An OpenFOAM installation at a custom location can be selected with:
@@ -645,10 +646,10 @@ export OPENFOAM_BASHRC=/absolute/path/to/openfoam10/etc/bashrc
 ./install.sh
 ```
 
-The `GpuGkp` frontend launches `gpu28CudaBackend` from `$FOAM_USER_APPBIN`. A custom backend location can be selected with:
+The `GpuGkp` frontend launches `gpu30CudaBackend` from `$FOAM_USER_APPBIN`. A custom backend location can be selected with:
 
 ```bash
-export GPU28_CUDA_BACKEND=/absolute/path/to/gpu28CudaBackend
+export GPU30_CUDA_BACKEND=/absolute/path/to/gpu30CudaBackend
 ```
 
 ## OpenFOAM-style case setup
@@ -806,7 +807,7 @@ The supported explicit time schemes are `Euler`, `SSPRK2`, and `SSPRK3`. A fully
 `system/fvSolution` carries gas safeguards:
 
 ```foam
-GPU2_8
+GpuGkp
 {
     rhoMin              1e-12;
     TMin                1;
@@ -824,6 +825,7 @@ GPU2_8
 ```foam
 gpuResidentStrict                  true;
 gpuResidentPureGasOnly             false;
+dragModel                          SchillerNaumann;
 gpuResidentParticleCapacity        8000000;
 gpuResidentRandomSeed              12345;
 gpuResidentMaxFaceWalkHops         12;
@@ -836,6 +838,8 @@ dMin                               0.00001;
 dMax                               0.0004;
 dSigma                             0.3;
 parcelMass                         1e-11;
+injectionParcelMass                1e-11;
+legacyRestartParcelMass            1e-11;
 
 particleTemperatureTransport       true;
 particleRho                        2800;
@@ -857,9 +861,7 @@ gpuResidentPackingProjectionIterations 20;
 gpuCsrCellLocalPath                true;
 gpuCsrWarpAggregatedBinning        true;
 gpuCsrHeavyReduction               false;
-gpuCsrHeavyCellThreshold           4096;
-gpuCsrHeavyTileParticles           4096;
-gpuCsrHeavyWorkerBlocksPerSM       4;
+bn                                  8;
 
 particleWallCoeffs
 {
@@ -870,6 +872,7 @@ particleWallCoeffs
 
 | Entry | Meaning |
 |---|---|
+| `dragModel` | GPU drag law: `SchillerNaumann` (default) or `GidaspowErgunWenYu` |
 | `gpuResidentParticleCapacity` | Maximum resident parcel count allocated on the GPU |
 | `gpuResidentRandomSeed` | Reproducible device random-state seed |
 | `gpuResidentMaxFaceWalkHops` | Maximum face crossings resolved during one tracking call |
@@ -878,7 +881,9 @@ particleWallCoeffs
 | `rhoS` | Particle material density |
 | `dS` | Representative diameter and fixed diameter when `dSigma=0` |
 | `dMin`, `dMax`, `dSigma` | Truncated lognormal diameter limits and logarithmic width |
-| `parcelMass` | Physical mass represented by one numerical parcel |
+| `parcelMass` | Compatibility default for both explicit parcel-mass entries |
+| `injectionParcelMass` | Statistical mass assigned to newly injected parcels |
+| `legacyRestartParcelMass` | Statistical mass assigned when importing a GPU2 V4/V5 restart without stored per-parcel mass |
 | `particleTemperatureTransport` | Particle material-temperature equation switch |
 | `gpuResidentCollisionalPressure` | Granular collisional-pressure switch |
 | `gpuResidentPressureKickFraction` | Fractional substep used by the particle-pressure kick |
@@ -888,7 +893,15 @@ particleWallCoeffs
 | `gpuCsrCellLocalPath` | CP-CST L1 path switch |
 | `gpuCsrWarpAggregatedBinning` | E1 warp aggregation switch |
 | `gpuCsrHeavyReduction` | E2 heavy-cell scheduling switch |
+| `bn` | Dynamic CUDA block exponent; accepted values 5, 6, 7, or 8 give 32, 64, 128, or 256 threads |
 | `particleWallCoeffs` | Patch-specific particle velocity restitution |
+
+Gravity uses the standard optional OpenFOAM `constant/g` field.  An absent
+file selects the exact zero-gravity path.  See
+[`docs/PARAMETER_REFERENCE.md`](docs/PARAMETER_REFERENCE.md) for the complete
+3.0 parameter semantics and
+[`docs/GPU30_UPGRADE_GUIDE.md`](docs/GPU30_UPGRADE_GUIDE.md) for migration
+from 2.8.
 
 Dynamic inlet schedules use `gpuResidentDynamicInlet true` together with `gpuResidentInletPatch`, `gpuResidentPressureTable`, `gpuResidentVolumeFractionTable`, and `gpuResidentInletTemperature`.
 
@@ -928,7 +941,7 @@ GPU-Riemann-GKP/
 └── assets/                        # README visuals and validation figures
 ```
 
-The repository publishes the GPL-3.0-or-later OpenFOAM frontend source, public process protocol, runnable cases, and a precompiled CUDA backend. CUDA backend implementation source remains in the private development repository. The separate executable boundary keeps OpenFOAM libraries in `GpuGkp` and CUDA runtime code in `gpu28CudaBackend`; the backend binary is governed by [`backend/BINARY-LICENSE.txt`](backend/BINARY-LICENSE.txt).
+The repository publishes the GPL-3.0-or-later OpenFOAM frontend source, public process protocol, runnable cases, and a precompiled CUDA backend. CUDA backend implementation source remains in the private development repository. The separate executable boundary keeps OpenFOAM libraries in `GpuGkp` and CUDA runtime code in `gpu30CudaBackend`; the backend binary is governed by [`backend/BINARY-LICENSE.txt`](backend/BINARY-LICENSE.txt).
 
 The backend manifest is available in [`backend/manifest.txt`](backend/manifest.txt), and [`backend/SHA256SUMS`](backend/SHA256SUMS) provides the release checksum.
 

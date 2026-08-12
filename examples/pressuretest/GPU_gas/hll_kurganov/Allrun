@@ -4,7 +4,7 @@ source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)/scr
 set -euo pipefail
 
 frontend="${FOAM_USER_APPBIN}/GpuGkp"
-backend="${GPU28_CUDA_BACKEND:-${FOAM_USER_APPBIN}/gpu28CudaBackend}"
+backend="${GPU30_CUDA_BACKEND:-${FOAM_USER_APPBIN}/gpu30CudaBackend}"
 
 test -x "${frontend}"
 test -x "${backend}"
@@ -34,7 +34,7 @@ rm -f "${case_dir}"/log.* "${case_dir}"/runtime.*
 
 cd "${case_dir}"
 blockMesh > log.blockMesh 2>&1
-export GPU28_CUDA_BACKEND="${backend}"
+export GPU30_CUDA_BACKEND="${backend}"
 exec /usr/bin/time \
     -f 'elapsed_seconds=%e' \
     -o runtime.gpu \

@@ -35,7 +35,7 @@ independent contribution maintained by the GPU-Riemann-GKP contributors.
 
 THIRD-PARTY NUMERICAL FORMULA ATTRIBUTION
 
-The GPU2.8 Riemann gas-flux module expresses the Tadmor/Kurganov central
+The GPU 3.0 Riemann gas-flux module expresses the Tadmor/Kurganov central
 fluxes in the unit-area form used by OpenFOAM 10 rhoCentralFoam. OpenFOAM is
 distributed under GPL-3.0-or-later; see the OpenFOAM source distribution for
 its copyright notices and complete licence terms.

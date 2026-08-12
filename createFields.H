@@ -3,6 +3,44 @@
 
 #include "readGpuGasConfiguration.H"
 
+autoPtr<GpuDragModel> gpuDragModel = GpuDragModel::New(ugkwpProps);
+
+uniformDimensionedVectorField g
+(
+    IOobject
+    (
+        "g",
+        runTime.constant(),
+        mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::NO_WRITE
+    ),
+    dimensionedVector("g", dimAcceleration, vector::zero)
+);
+
+if (g.dimensions() != dimAcceleration)
+{
+    FatalErrorInFunction
+        << "constant/g must have acceleration dimensions "
+        << dimAcceleration << "; current dimensions are "
+        << g.dimensions() << exit(FatalError);
+}
+
+if
+(
+    !finiteScalar(g.value().x())
+ || !finiteScalar(g.value().y())
+ || !finiteScalar(g.value().z())
+)
+{
+    FatalErrorInFunction
+        << "constant/g must contain a finite vector; current value is "
+        << g.value() << exit(FatalError);
+}
+
+Info<< "GPU particle forces: dragModel=" << gpuDragModel->modelName()
+    << " gravity=" << g.value() << " m/s^2" << nl;
+
 Switch solveParticleTemperature
 (
     ugkwpProps.lookupOrDefault<Switch>
@@ -115,6 +153,31 @@ dimensionedScalar parcelMass
     ugkwpProps.lookupOrDefault<scalar>("parcelMass", 1.0e-9)
 );
 
+// GPU3.0 separates the statistical weight of existing restart particles
+// from the uniform weight assigned to particles injected after this start.
+// `parcelMass` remains the backward-compatible default for both values.
+dimensionedScalar injectionParcelMass
+(
+    "injectionParcelMass",
+    dimensionSet(1, 0, 0, 0, 0, 0, 0),
+    ugkwpProps.lookupOrDefault<scalar>
+    (
+        "injectionParcelMass",
+        parcelMass.value()
+    )
+);
+
+dimensionedScalar legacyRestartParcelMass
+(
+    "legacyRestartParcelMass",
+    dimensionSet(1, 0, 0, 0, 0, 0, 0),
+    ugkwpProps.lookupOrDefault<scalar>
+    (
+        "legacyRestartParcelMass",
+        parcelMass.value()
+    )
+);
+
 if (!finiteScalar(rhoS.value()) || rhoS.value() <= SMALL)
 {
     FatalErrorInFunction
@@ -134,6 +197,30 @@ if (!finiteScalar(parcelMass.value()) || parcelMass.value() <= SMALL)
     FatalErrorInFunction
         << "ugkwpProperties: parcelMass must be positive. Current parcelMass = "
         << parcelMass.value() << exit(FatalError);
+}
+
+if
+(
+    !finiteScalar(injectionParcelMass.value())
+ || injectionParcelMass.value() <= SMALL
+)
+{
+    FatalErrorInFunction
+        << "ugkwpProperties: injectionParcelMass must be positive. Current "
+        << "injectionParcelMass = " << injectionParcelMass.value()
+        << exit(FatalError);
+}
+
+if
+(
+    !finiteScalar(legacyRestartParcelMass.value())
+ || legacyRestartParcelMass.value() <= SMALL
+)
+{
+    FatalErrorInFunction
+        << "ugkwpProperties: legacyRestartParcelMass must be positive. "
+        << "Current legacyRestartParcelMass = "
+        << legacyRestartParcelMass.value() << exit(FatalError);
 }
 
 volVectorField U

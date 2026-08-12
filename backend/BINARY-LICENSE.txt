@@ -4,8 +4,9 @@ Copyright (c) 2026 the GPU-Riemann-GKP backend contributors.
 All rights reserved except for the permissions stated below.
 
 Permission is granted, free of charge, to use and execute an unmodified copy
-of the supplied gpu28CudaBackend binary for any lawful purpose together with
-the GPU-Riemann-GKP public frontend.
+of the supplied `gpu30CudaBackend` and
+`gpu30CudaBackend-twophaseflux-validation` binaries for any lawful purpose
+together with the GPU-Riemann-GKP public frontend.
 
 Permission is granted to redistribute the unmodified backend binary as part of
 a complete, unmodified GPU-Riemann-GKP binary release that includes this

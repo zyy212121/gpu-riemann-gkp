@@ -4,7 +4,24 @@ source "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)/scr
 set -euo pipefail
 
 frontend="${FOAM_USER_APPBIN}/GpuGkp"
-backend="${GPU28_CUDA_BACKEND:-${FOAM_USER_APPBIN}/gpu28CudaBackend}"
+backend="${GPU30_CUDA_BACKEND:-${FOAM_USER_APPBIN}/gpu30CudaBackend}"
+
+if [[ "${1:-}" == "--check" ]]; then
+    [[ $# -eq 1 ]] || { printf 'Usage: %s [--check]\n' "${0##*/}" >&2; exit 2; }
+    test -x "${frontend}"
+    test -x "${backend}"
+    for case_path in "${case_dir}"/*; do
+        [[ -d "${case_path}" && -f "${case_path}/system/controlDict" ]] || continue
+        grep -Eq '^[[:space:]]*application[[:space:]]+GpuGkp;' \
+            "${case_path}/system/controlDict"
+        grep -Eq '^[[:space:]]*GpuGkp[[:space:]]*$' \
+            "${case_path}/system/fvSolution"
+    done
+    printf 'Configuration check passed: GPU gas flux family.\n'
+    exit 0
+fi
+
+[[ $# -eq 0 ]] || { printf 'Usage: %s [--check]\n' "${0##*/}" >&2; exit 2; }
 
 test -x "${frontend}"
 test -x "${backend}"
@@ -34,7 +51,7 @@ rm -f "${case_dir}"/log.* "${case_dir}"/runtime.*
 
 cd "${case_dir}"
 blockMesh > log.blockMesh 2>&1
-export GPU28_CUDA_BACKEND="${backend}"
+export GPU30_CUDA_BACKEND="${backend}"
 exec /usr/bin/time \
     -f 'elapsed_seconds=%e' \
     -o runtime.gpu \
