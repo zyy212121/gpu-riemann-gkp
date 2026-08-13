@@ -1,0 +1,21 @@
+{
+  "source": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/cases/performance/injectionNozzle/0.10999998/gpuResidentStrictParticles.dat",
+  "source_sha256": "ae6423ebfbe4126407523027ee97efe69778d0ee86f02f0cbbb0433feb3e0300",
+  "source_particles": 7864,
+  "multiplier": 1,
+  "particles": 7864,
+  "chunk_particles": 262144,
+  "output_sha256": "905afe09a1445c6a56783e7f51573303969f1992b036842380de0f69e7e244ee",
+  "state": "E1",
+  "mode": "trajectory",
+  "start_time": 0.10999998,
+  "end_time": 0.12,
+  "delta_t": 1e-08,
+  "parcel_mass": 5e-09,
+  "particle_capacity": 107864,
+  "switches": {
+    "gpuCsrCellLocalPath": "true",
+    "gpuCsrWarpAggregatedBinning": "true",
+    "gpuCsrHeavyReduction": "false"
+  }
+}

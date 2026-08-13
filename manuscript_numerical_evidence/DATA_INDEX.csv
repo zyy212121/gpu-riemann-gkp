@@ -1,0 +1,61 @@
+case_id,category,package_path,manuscript_role,original_source
+01_dustybox,figure,01_dustybox/figures/dustybox_validation.pdf,Figure dustybox-validation,D:/牛逼系列/牛逼GPU/figures/dustybox_validation.pdf
+01_dustybox,data,01_dustybox/data/dustybox_validation.csv,Numerical and reference relaxation histories,D:/牛逼系列/牛逼GPU/figures/dustybox_validation.csv
+01_dustybox,validation,01_dustybox/data/dustybox_validation_metrics.json,Reported error metrics,D:/牛逼系列/牛逼GPU/figures/dustybox_validation_metrics.json
+01_dustybox,metadata,01_dustybox/data/dustybox_case_parameters.json,Case parameters,D:/牛逼系列/牛逼GPU/figures/dustybox_case_parameters.json
+02_wind_sand_shock_tube,figure,02_wind_sand_shock_tube/figures/windsand_shocktube_density.pdf,Figure windsand-validation density panels,D:/牛逼系列/牛逼GPU/figures/windsand_shocktube_density.pdf
+02_wind_sand_shock_tube,figure,02_wind_sand_shock_tube/figures/windsand_shocktube_velocity.pdf,Figure windsand-validation velocity panels,D:/牛逼系列/牛逼GPU/figures/windsand_shocktube_velocity.pdf
+02_wind_sand_shock_tube,figure,02_wind_sand_shock_tube/figures/windsand_shocktube_pressure_temperature.pdf,Figure windsand-validation pressure/temperature panels,D:/牛逼系列/牛逼GPU/figures/windsand_shocktube_pressure_temperature.pdf
+02_wind_sand_shock_tube,figure,02_wind_sand_shock_tube/figures/windsand_thermal_covariance.pdf,Figure windsand-thermal-covariance,D:/牛逼系列/牛逼GPU/figures/windsand_thermal_covariance.pdf
+02_wind_sand_shock_tube,data,02_wind_sand_shock_tube/data/windsand_shocktube_validation.csv,Numerical and published profiles,D:/牛逼系列/牛逼GPU/figures/windsand_shocktube_validation.csv
+02_wind_sand_shock_tube,data,02_wind_sand_shock_tube/data/windsand_thermal_covariance.csv,Velocity-temperature covariance,D:/牛逼系列/牛逼GPU/figures/windsand_thermal_covariance.csv
+02_wind_sand_shock_tube,validation,02_wind_sand_shock_tube/data/windsand_shocktube_validation_metrics.json,Published-profile error metrics,D:/牛逼系列/牛逼GPU/figures/windsand_shocktube_validation_metrics.json
+02_wind_sand_shock_tube,metadata,02_wind_sand_shock_tube/data/windsand_case_parameters.json,Case and reference parameters,D:/牛逼系列/牛逼GPU/figures/windsand_case_parameters.json
+02_wind_sand_shock_tube,reference,02_wind_sand_shock_tube/reference/published_reference_profiles.csv,Published Yang et al. profile curves,SOURCE_STUDY_ARCHIVE/cases/consistency/windSandShockTube/reference/published/yang2022_collisionless_ugkwp.csv
+03_taylor_green,figure,03_taylor_green/figures/taylor_green_consistency.pdf,Figure tgv-consistency,D:/牛逼系列/牛逼GPU/figures/taylor_green_consistency.pdf
+03_taylor_green,figure,03_taylor_green/figures/taylor_green_performance.pdf,Figure tgv-performance,D:/牛逼系列/牛逼GPU/figures/taylor_green_performance.pdf
+03_taylor_green,data,03_taylor_green/consistency/taylor_green_consistency.csv,Matched-time invariant and energy histories,D:/牛逼系列/牛逼GPU/figures/taylor_green_consistency.csv
+03_taylor_green,data,03_taylor_green/consistency/taylor_green_field_errors.csv,Matched-time field L2 errors,D:/牛逼系列/牛逼GPU/figures/taylor_green_field_errors.csv
+03_taylor_green,validation,03_taylor_green/consistency/consistency_audit.json,Authoritative consistency audit,SOURCE_STUDY_ARCHIVE/results/taylorGreen_consistency_curves_20260810/consistency_audit.json
+03_taylor_green,data,03_taylor_green/performance/taylor_green_l1_vs_l0_speedup.csv,L1/L0 load-dependent speedup,D:/牛逼系列/牛逼GPU/figures/taylor_green_l1_vs_l0_speedup.csv
+03_taylor_green,data,03_taylor_green/performance/taylor_green_incremental_speedups.csv,T1/L1 and S1/T1 incremental speedups,D:/牛逼系列/牛逼GPU/figures/taylor_green_incremental_speedups.csv
+03_taylor_green,data,03_taylor_green/performance/taylor_green_s1_t1_cost.csv,T1 and S1 stage costs,D:/牛逼系列/牛逼GPU/figures/taylor_green_s1_t1_cost.csv
+03_taylor_green,metadata,03_taylor_green/performance/taylor_nozzle_data_provenance.json,Performance-data provenance,D:/牛逼系列/牛逼GPU/figures/taylor_nozzle_data_provenance.json
+04_two_phase_laval_nozzle,figure,04_two_phase_laval_nozzle/figures/nozzle_sparse_dense_volume_fraction.png,Figure nozzle-sparse-dense-volume,D:/牛逼系列/牛逼GPU/figures/nozzle_sparse_dense_volume_fraction.png
+04_two_phase_laval_nozzle,figure,04_two_phase_laval_nozzle/figures/nozzle_sparse_dense_diameter.png,Figure nozzle-sparse-dense-diameter,D:/牛逼系列/牛逼GPU/figures/nozzle_sparse_dense_diameter.png
+04_two_phase_laval_nozzle,figure,04_two_phase_laval_nozzle/figures/nozzle_static_performance.pdf,Figure nozzle-static-performance,D:/牛逼系列/牛逼GPU/figures/nozzle_static_performance.pdf
+04_two_phase_laval_nozzle,data,04_two_phase_laval_nozzle/data/nozzle_field_t0p115.csv,Readable nozzle cell field,D:/牛逼系列/牛逼GPU/figures/nozzle_field_t0p115.csv
+04_two_phase_laval_nozzle,validation,04_two_phase_laval_nozzle/data/nozzle_field_t0p115_metrics.json,Nozzle field ranges,D:/牛逼系列/牛逼GPU/figures/nozzle_field_t0p115_metrics.json
+04_two_phase_laval_nozzle,field_snapshot,04_two_phase_laval_nozzle/field_snapshots/sparse_t0.11,Readable sparse Eulerian OpenFOAM result fields,GPU2.6/examples/pressuretest/GPU_twophase/cp_cst_test/t1/0.10999998
+04_two_phase_laval_nozzle,field_snapshot,04_two_phase_laval_nozzle/field_snapshots/dense_t0.11,Readable dense Eulerian OpenFOAM result fields,GPU2.6/examples/pressuretest/GPU_twophase/cp_cst_test/dense/t1/0.10999997
+04_two_phase_laval_nozzle,data,04_two_phase_laval_nozzle/performance/nozzle_l1_vs_l0_speedup.csv,L1/L0 load-dependent speedup,D:/牛逼系列/牛逼GPU/figures/nozzle_l1_vs_l0_speedup.csv
+04_two_phase_laval_nozzle,data,04_two_phase_laval_nozzle/performance/nozzle_incremental_speedups.csv,T1/L1 and S1/T1 incremental speedups,D:/牛逼系列/牛逼GPU/figures/nozzle_incremental_speedups.csv
+04_two_phase_laval_nozzle,data,04_two_phase_laval_nozzle/performance/nozzle_state_speedups.csv,All manuscript state ratios,D:/牛逼系列/牛逼GPU/figures/nozzle_state_speedups.csv
+04_two_phase_laval_nozzle,data,04_two_phase_laval_nozzle/performance/nozzle_total_cost.csv,Per-state CUDA-event cost,D:/牛逼系列/牛逼GPU/figures/nozzle_total_cost.csv
+04_two_phase_laval_nozzle,data,04_two_phase_laval_nozzle/performance/cross_case_l1_l0_speedup.csv,Taylor-Green/nozzle crossover comparison,D:/牛逼系列/牛逼GPU/figures/cross_case_l1_l0_speedup.csv
+04_two_phase_laval_nozzle,data,04_two_phase_laval_nozzle/performance/nozzle_taylorgreen_s1_vs_l0.csv,Cross-case S1/L0 comparison,D:/牛逼系列/牛逼GPU/figures/nozzle_taylorgreen_s1_vs_l0.csv
+05_heavy_laval_nozzle,figure,05_heavy_laval_nozzle/figures/gpu295_nozzle_s1_time_vs_block.png,Figure nozzle-s1-block-scan,D:/牛逼系列/牛逼GPU/figures/gpu295_nozzle_s1_time_vs_block.png
+05_heavy_laval_nozzle,figure,05_heavy_laval_nozzle/figures/gpu30_heavy_tail_speedup.png,Figure nozzle-heavy-tail-speedup,D:/牛逼系列/牛逼GPU/figures/gpu30_heavy_tail_speedup.png
+05_heavy_laval_nozzle,figure,05_heavy_laval_nozzle/figures/gpu30_heavy_tail_stage_cost.png,Figure nozzle-heavy-tail-stages,D:/牛逼系列/牛逼GPU/figures/gpu30_heavy_tail_stage_cost.png
+05_heavy_laval_nozzle,data,05_heavy_laval_nozzle/block_scan/gpu295_nozzle_s1_time_vs_block.csv,Block-size scan summary,D:/牛逼系列/牛逼GPU/figures/gpu295_nozzle_s1_time_vs_block.csv
+05_heavy_laval_nozzle,data,05_heavy_laval_nozzle/block_scan/gpu295_nozzle_block_scan_run_data.csv,Accepted block-scan repetitions,D:/牛逼系列/牛逼GPU/figures/gpu295_nozzle_block_scan_run_data.csv
+05_heavy_laval_nozzle,data,05_heavy_laval_nozzle/block_scan/gpu295_nozzle_heavy_threshold_vs_block.csv,Dynamic heavy threshold table,D:/牛逼系列/牛逼GPU/figures/gpu295_nozzle_heavy_threshold_vs_block.csv
+05_heavy_laval_nozzle,data,05_heavy_laval_nozzle/weighted_tail_s1_s2/gpu30_heavy_tail_speedup.csv,S2/S1 speedup by refinement factor,D:/牛逼系列/牛逼GPU/figures/gpu30_heavy_tail_speedup.csv
+05_heavy_laval_nozzle,data,05_heavy_laval_nozzle/weighted_tail_s1_s2/gpu30_heavy_tail_stage_cost.csv,Heavy-sensitive stage costs,D:/牛逼系列/牛逼GPU/figures/gpu30_heavy_tail_stage_cost.csv
+05_heavy_laval_nozzle,data,05_heavy_laval_nozzle/four_state_extension/gpu30_four_state_heavy_speedup_compare.csv,T2/T1 and S2/S1 comparison,D:/牛逼系列/牛逼GPU/figures/gpu30_four_state_heavy_speedup_compare.csv
+05_heavy_laval_nozzle,data,05_heavy_laval_nozzle/four_state_extension/gpu30_four_state_split_speedup_compare.csv,S2/T2 and S1/T1 comparison,D:/牛逼系列/牛逼GPU/figures/gpu30_four_state_split_speedup_compare.csv
+01_dustybox,raw_output,01_dustybox/source_calculation_outputs,Original 31-time U/Us fields solver log checker output and parameters,SOURCE_STUDY_ARCHIVE/results/consistency_release_20260809/dustybox
+02_wind_sand_shock_tube,raw_output,02_wind_sand_shock_tube/source_calculation_outputs,Original final macro fields full particle restart solver log checker output and parameters,SOURCE_STUDY_ARCHIVE/results/consistency_release_20260809/windSandShockTube
+03_taylor_green,raw_output,03_taylor_green/consistency/source_calculation_outputs,Original 21-time seven-field outputs for four states exact particle headers and shared full initial restart,SOURCE_STUDY_ARCHIVE/results/taylorGreen_consistency_curves_20260810/runs
+03_taylor_green,raw_timing,03_taylor_green/performance/raw_runs_taylor_formal,Original low-load per-process CUDA-event timing outputs and receipts,SOURCE_STUDY_ARCHIVE/results/taylorGreen_formal
+03_taylor_green,raw_timing,03_taylor_green/performance/raw_runs_taylor_large,Original high-load per-process CUDA-event timing outputs and receipts,SOURCE_STUDY_ARCHIVE/results/taylorGreen_large_formal_20260810
+03_taylor_green,raw_timing,03_taylor_green/performance/raw_runs_t1_s1,Original paired T1/S1 per-process CUDA-event timing outputs and receipts,SOURCE_STUDY_ARCHIVE/results/taylorGreen_paired_control_20260810
+04_two_phase_laval_nozzle,raw_output,04_two_phase_laval_nozzle/source_calculation_outputs/field_t0.11500001,Original p epsilonS and U trajectory fields,SOURCE_STUDY_ARCHIVE/results/injectionNozzle_trajectory_20260810/0.11500001
+04_two_phase_laval_nozzle,raw_output,04_two_phase_laval_nozzle/source_calculation_outputs/occupancy_base,Original occupancy particle restart and mesh owner,SOURCE_STUDY_ARCHIVE/cases/performance/injectionNozzle
+04_two_phase_laval_nozzle,raw_timing,04_two_phase_laval_nozzle/performance/raw_runs,Original 144 per-process CUDA-event timing outputs and receipts,SOURCE_STUDY_ARCHIVE/results/injectionNozzle_matrix_20260810
+05_heavy_laval_nozzle,raw_timing,05_heavy_laval_nozzle/block_scan/raw_runs,Original 52 block-scan CUDA-event timing outputs and receipts,SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu295_block_scan_20260811
+05_heavy_laval_nozzle,raw_timing,05_heavy_laval_nozzle/weighted_tail_s1_s2/raw_runs,Original 84 S1/S2 CUDA-event timing outputs and receipts,SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_weighted_tail_matrix_20260811/runs
+05_heavy_laval_nozzle,raw_output,05_heavy_laval_nozzle/weighted_tail_s1_s2/refinement_source; raw_physics_gate,Original conservative-refinement records and S1/S2 one-step physical-gate outputs,SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_weighted_tail_matrix_20260811
+05_heavy_laval_nozzle,raw_timing,05_heavy_laval_nozzle/four_state_extension/raw_runs,Original 168 four-state CUDA-event timing outputs and receipts,SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/runs
+05_heavy_laval_nozzle,raw_output,05_heavy_laval_nozzle/four_state_extension/refinement_source; raw_physics_gate,Original conservative-refinement records and four-state one-step physical-gate outputs,SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813
+03_taylor_green_and_04_nozzle,intermediate_source,provenance/cross_case_performance_source.csv,Combined performance table used to select Taylor-Green nozzle and cross-case plotting subsets,D:/tempt/conclusion1_speedup.csv

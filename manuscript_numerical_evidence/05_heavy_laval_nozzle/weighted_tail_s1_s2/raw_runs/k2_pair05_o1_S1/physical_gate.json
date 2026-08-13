@@ -1,0 +1,146 @@
+{
+  "backend_sha256": "5769ab447fd1a9e6106d212b5a6a9906b86f54530ebc295b750aa22085b800b1",
+  "bitwise_particle_mismatches": {
+    "pT": 0,
+    "pd": 0,
+    "pm": 0
+  },
+  "canonical_level_manifest_sha256": "34ea38088bdd99a02b1ae436f16bc82a46c77083e5e5768c413c84ab7a2c06b4",
+  "exact_metadata_mismatches": {
+    "cell": 0,
+    "orig_id": 0,
+    "rng": 0,
+    "status": 0
+  },
+  "factor": 2,
+  "frontend_sha256": "965af55b1e4f3a820eead7618f3281355a509784a0499c35ec73fe24178e6581",
+  "global_invariants": {
+    "mass": {
+      "l1_scaled_residual": 0.0,
+      "residual": "0.000000000000000000000e+00",
+      "s1": "3.796010000000000269432e-05",
+      "s2": "3.796010000000000269432e-05"
+    },
+    "mass_T": {
+      "l1_scaled_residual": 0.0,
+      "residual": "0.000000000000000000000e+00",
+      "s1": "1.366563600000000044954e-01",
+      "s2": "1.366563600000000044954e-01"
+    },
+    "mass_d": {
+      "l1_scaled_residual": 0.0,
+      "residual": "0.000000000000000000000e+00",
+      "s1": "7.630383750006137914275e-09",
+      "s2": "7.630383750006137914275e-09"
+    },
+    "mechanical_energy": {
+      "l1_scaled_residual": 1.155899407272563e-17,
+      "residual": "6.993104012531503599348e-18",
+      "s1": "6.049924386614481397473e-01",
+      "s2": "6.049924386614481397473e-01"
+    },
+    "mom_x": {
+      "l1_scaled_residual": 3.8056064738522254e-19,
+      "residual": "-1.694065894508600678137e-21",
+      "s1": "4.451500453733941639611e-03",
+      "s2": "4.451500453733941639611e-03"
+    },
+    "mom_y": {
+      "l1_scaled_residual": 1.3050078578635056e-18,
+      "residual": "5.558653716356345975136e-22",
+      "s1": "-4.053253554388016547533e-04",
+      "s2": "-4.053253554388016547533e-04"
+    },
+    "mom_z": {
+      "l1_scaled_residual": 1.757985085549412e-17,
+      "residual": "-3.339741723182849237293e-22",
+      "s1": "-4.229049608514427608008e-07",
+      "s2": "-4.229049608514430784382e-07"
+    }
+  },
+  "input_restart_sha256": "50d23cbd990b730960d8094acfa0cb986d8cc2517bf0a1cb4fcc2664dd535e82",
+  "level_case": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_weighted_tail_matrix_20260811/inputs/k2",
+  "macro_fields": {
+    "T": {
+      "absolute_linf": 3.183231456205249e-12,
+      "relative_l2": 2.047324119676389e-17
+    },
+    "U": {
+      "absolute_linf": 2.2737367544323206e-13,
+      "relative_l2": 6.059756783368707e-18
+    },
+    "Us": {
+      "absolute_linf": 5.115907697472721e-13,
+      "relative_l2": 1.1728086334978458e-16
+    },
+    "dMeanCell": {
+      "absolute_linf": 1.734723475976807e-18,
+      "relative_l2": 1.1981044778804799e-16
+    },
+    "epsilonS": {
+      "absolute_linf": 6.938893903907228e-17,
+      "relative_l2": 2.7897866223901725e-16
+    },
+    "p": {
+      "absolute_linf": 9.313225746154785e-10,
+      "relative_l2": 8.160009079410974e-18
+    },
+    "rho": {
+      "absolute_linf": 0.0,
+      "relative_l2": 0.0
+    },
+    "rhoDs": {
+      "absolute_linf": 6.938893903907228e-18,
+      "relative_l2": 1.4990874472433611e-16
+    },
+    "rhoE": {
+      "absolute_linf": 3.725290298461914e-09,
+      "relative_l2": 6.644138668925551e-18
+    },
+    "rhoEs": {
+      "absolute_linf": 1.862645149230957e-09,
+      "relative_l2": 1.5761797807359918e-16
+    },
+    "rhoU": {
+      "absolute_linf": 4.547473508864641e-13,
+      "relative_l2": 2.0785704656005124e-17
+    },
+    "rhoUs": {
+      "absolute_linf": 7.275957614183426e-12,
+      "relative_l2": 1.4314597688095233e-16
+    },
+    "theta": {
+      "absolute_linf": 1.8978951743520156e-10,
+      "relative_l2": 2.5775367900773582e-14
+    }
+  },
+  "particle_maximum_absolute": {
+    "pTheta": 7.760847334656484e-11,
+    "pux": 2.5133851977443555e-07,
+    "puy": 3.858311785620572e-07,
+    "puz": 8.351192568589738e-07,
+    "px": 1.2573275753879898e-14,
+    "py": 1.929359449981405e-14,
+    "pz": 4.175620352958598e-14
+  },
+  "particles": 3807010,
+  "passed": true,
+  "s1_final_restart_sha256": "78060213b531e0dc195321a5ffa7617832b20c6eb2f398bf60179a341cbfee62",
+  "s2_final_restart_sha256": "ca71bafb2d69e5c490b926f18dda2067c34565ae21d2cc080f022facd77e9028",
+  "schema": "gpu30-s1-s2-one-step-physical-gate-v1",
+  "summary": {
+    "maximum_global_invariant_l1_scaled_residual": 1.757985085549412e-17,
+    "maximum_macro_relative_l2": 2.5775367900773582e-14,
+    "maximum_pTheta_absolute": 7.760847334656484e-11,
+    "maximum_position_absolute": 4.175620352958598e-14,
+    "maximum_velocity_absolute": 8.351192568589738e-07
+  },
+  "thresholds": {
+    "global_invariant_l1_scaled": 1e-12,
+    "macro_relative_l2": 1e-12,
+    "pTheta_absolute": 1e-08,
+    "position_absolute": 1e-12,
+    "velocity_absolute": 1e-05
+  },
+  "time": "0.11500006"
+}

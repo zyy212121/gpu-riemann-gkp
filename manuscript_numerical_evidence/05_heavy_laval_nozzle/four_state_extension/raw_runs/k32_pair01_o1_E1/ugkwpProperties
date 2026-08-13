@@ -1,0 +1,104 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  10
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version         2;
+    format          ascii;
+    class           dictionary;
+    location        "constant";
+    object          ugkwpProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+gpuResidentStrict true;
+
+gpuResidentPureGasOnly false;
+
+gpuResidentDynamicInlet true;
+
+gpuResidentParticleCapacity 4338075;
+
+gpuResidentRandomSeed 12345;
+
+gpuResidentMaxFaceWalkHops 12;
+
+gpuResidentInletPatch inlet;
+
+gpuResidentPressureTable inletPressure.table;
+
+gpuResidentVolumeFractionTable inletVolumeFraction.table;
+
+gpuResidentInletTemperature 3600;
+
+gpuResidentCourantUpdateInterval 100;
+
+gpuResidentMaxDeltaTGrowth 1.05;
+
+rhoS            2800;
+
+particleTemperatureTransport false;
+
+particleRho     2800;
+
+particleCp      1000;
+
+particleTMin    300;
+
+particleTMax    5000;
+
+dS              0.000209206;
+
+dMin            1e-05;
+
+dMax            0.0004;
+
+dSigma          0.3;
+
+parcelMass      1.0000000000000001e-11;
+
+gpuResidentCollisionalPressure true;
+
+gpuResidentCollisionalRestitution 0.9;
+
+gpuResidentPressureKickFraction 0.25;
+
+epsSMin         1e-12;
+
+thetaMin        1e-12;
+
+gpuResidentInjectionTheta 1e-12;
+
+gpuResidentInjectionTp 3600;
+
+particleWallCoeffs
+{
+    default         1;
+    outlet          0;
+}
+gpuCsrCellLocalPath true;
+gpuCsrHeavyReduction false;
+gpuCsrHeavyCellThreshold 1024;
+
+gpuCsrHeavyTileParticles 1024;
+
+gpuCsrHeavyWorkerBlocksPerSM 4;
+gpuCsrWarpAggregatedBinning true;
+bn 6;
+dragModel GidaspowErgunWenYu;
+GidaspowErgunWenYuCoeffs
+{
+    residualRe 1e-3;
+}
+
+injectionParcelMass 1.0000000000000001e-11;
+
+legacyRestartParcelMass 1.0000000000000001e-11;
+
+gpuCsrSplitPreDirectory false;
+
+// ************************************************************************* //

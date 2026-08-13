@@ -1,0 +1,127 @@
+{
+  "model": "cost_ms = intercept_ms + slope_ms_per_million_particles * Np_million",
+  "fit_loads": "all six globally refined loads",
+  "fits": {
+    "L0": {
+      "total_ms": {
+        "intercept_ms": 0.9400238915003725,
+        "slope_ms_per_million_particles": 9.728343513311403,
+        "r_squared": 0.9998971290210331
+      },
+      "bin_pre_ms": {
+        "intercept_ms": 0.0,
+        "slope_ms_per_million_particles": 0.0,
+        "r_squared": 1.0
+      },
+      "collision_pool_ms": {
+        "intercept_ms": -0.07784677237239088,
+        "slope_ms_per_million_particles": 2.5423440418793044,
+        "r_squared": 0.9995256845319413
+      },
+      "bin_post_ms": {
+        "intercept_ms": 0.0,
+        "slope_ms_per_million_particles": 0.0,
+        "r_squared": 1.0
+      },
+      "moments_ms": {
+        "intercept_ms": 0.047768724483484806,
+        "slope_ms_per_million_particles": 0.5510003640560351,
+        "r_squared": 0.9995977806207708
+      }
+    },
+    "L1": {
+      "total_ms": {
+        "intercept_ms": 4.096127816419933,
+        "slope_ms_per_million_particles": 5.667307695851614,
+        "r_squared": 0.9996094012063939
+      },
+      "bin_pre_ms": {
+        "intercept_ms": 0.020008609757597155,
+        "slope_ms_per_million_particles": 0.2372308184645288,
+        "r_squared": 0.9997590882215089
+      },
+      "collision_pool_ms": {
+        "intercept_ms": 0.35214145191098534,
+        "slope_ms_per_million_particles": 0.13423352267301966,
+        "r_squared": 0.9901776493505742
+      },
+      "bin_post_ms": {
+        "intercept_ms": 0.007232381922136168,
+        "slope_ms_per_million_particles": 0.24036385918101894,
+        "r_squared": 0.9998196840592702
+      },
+      "moments_ms": {
+        "intercept_ms": 0.9230568838174666,
+        "slope_ms_per_million_particles": 0.35437416484953044,
+        "r_squared": 0.9997173684149745
+      }
+    },
+    "E1": {
+      "total_ms": {
+        "intercept_ms": 4.096200590110637,
+        "slope_ms_per_million_particles": 5.379461156309534,
+        "r_squared": 0.9994617872613737
+      },
+      "bin_pre_ms": {
+        "intercept_ms": 0.018013436193222595,
+        "slope_ms_per_million_particles": 0.09640979895242362,
+        "r_squared": 0.9955941699193719
+      },
+      "collision_pool_ms": {
+        "intercept_ms": 0.35298480524750553,
+        "slope_ms_per_million_particles": 0.1335509685431116,
+        "r_squared": 0.9899267160527417
+      },
+      "bin_post_ms": {
+        "intercept_ms": -0.0033183855017696624,
+        "slope_ms_per_million_particles": 0.09850590765304408,
+        "r_squared": 0.9967483096841294
+      },
+      "moments_ms": {
+        "intercept_ms": 0.9356578505367742,
+        "slope_ms_per_million_particles": 0.3519985235665624,
+        "r_squared": 0.9995796417682562
+      }
+    },
+    "S1": {
+      "total_ms": {
+        "intercept_ms": 4.163914144729213,
+        "slope_ms_per_million_particles": 5.272182404475319,
+        "r_squared": 0.9995264500361026
+      },
+      "bin_pre_ms": {
+        "intercept_ms": 0.039221748384339866,
+        "slope_ms_per_million_particles": -0.001737381778644959,
+        "r_squared": 0.4404230573993001
+      },
+      "collision_pool_ms": {
+        "intercept_ms": 0.36097311708208224,
+        "slope_ms_per_million_particles": 0.12010680097138975,
+        "r_squared": 0.9908699132546611
+      },
+      "bin_post_ms": {
+        "intercept_ms": -0.0031037967564755305,
+        "slope_ms_per_million_particles": 0.09795081144327974,
+        "r_squared": 0.996814920050323
+      },
+      "moments_ms": {
+        "intercept_ms": 0.9332054199952736,
+        "slope_ms_per_million_particles": 0.3527470325968693,
+        "r_squared": 0.9997365722760548
+      }
+    }
+  },
+  "total_crossovers": {
+    "L0_equals_L1_million_particles": 0.7771672220546257,
+    "L1_equals_E1_million_particles": 0.0002528211415028927,
+    "E1_equals_S1_million_particles": 0.6311926030162757,
+    "L0_equals_S1_million_particles": 0.7234680646613553
+  },
+  "empirical_stable_positive_from_particles": {
+    "L1_over_L0": 3790500,
+    "E1_over_L1": 758100,
+    "S1_over_E1": 3790500,
+    "S1_over_L0": 758100
+  },
+  "scope_warning": "Fits are empirical for the fixed 7600-cell nozzle mesh and GPU; intercepts include cell-count-dependent work and slopes describe the tested particle-load range."
+}

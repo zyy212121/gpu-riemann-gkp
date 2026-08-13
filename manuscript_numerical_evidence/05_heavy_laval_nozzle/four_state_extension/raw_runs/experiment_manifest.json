@@ -1,0 +1,110 @@
+{
+  "accepted_input_root": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_weighted_tail_matrix_20260811/inputs",
+  "accepted_source_sha256": "f513b66b7d285b66034ab17e3741f8b6e9ee9893d30fe6582a75c2fad818e133",
+  "block_exponent": 6,
+  "block_threads": 64,
+  "delta_t": 5e-08,
+  "dry_run": false,
+  "experiment": "GPU3.0 B64 four-state conservative weighted-tail matrix",
+  "factors": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64
+  ],
+  "levels": [
+    {
+      "accepted_level_manifest_sha256": "e9cd5c30f9d39da6670ee937ece2a3df08c5e36c478df96346266a8d1bc901d1",
+      "case": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k1",
+      "conservation_csv_sha256": "eb6f71b44f634b2318c13efe174af30813efd5b24ad3ff08731a7c9a91357d88",
+      "factor": 1,
+      "particles": 3790500,
+      "refinement_manifest_sha256": "ca2af705a73f283d7524a36c6d48b4382f9e849700648932947ee08db77813b3",
+      "restart_sha256": "bb7eb72ee5e82c70446b27c7a9543662f13d4abde9b03a83b1f0a5a602a9dc86",
+      "selected_cells_csv_sha256": "fcadf11eef0c5c10e3fa894d92113047a31b71786b4bfbb24dde2ed62bb2e728"
+    },
+    {
+      "accepted_level_manifest_sha256": "a91e4a8b5afbe9ffb10d6a78407e456c444f264d7dd46f69acde1e7d60a058f0",
+      "case": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k2",
+      "conservation_csv_sha256": "759ae9f9ea8c140fefe5bdd3732c003873e2e266a3b71b70adb4e0fdcd800687",
+      "factor": 2,
+      "particles": 3801500,
+      "refinement_manifest_sha256": "960b9758164e1c93907987960b8d44893feb0e3867f0e676a474c83bca33d9a6",
+      "restart_sha256": "50d23cbd990b730960d8094acfa0cb986d8cc2517bf0a1cb4fcc2664dd535e82",
+      "selected_cells_csv_sha256": "b48ff00a409d64af529e3ad358c70d12f2e7e622912f6fcb607fd15315842fea"
+    },
+    {
+      "accepted_level_manifest_sha256": "0966ea762bb251cafd2302922207ba3c4c258eb79735f7ffeaa892615bf690e0",
+      "case": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k4",
+      "conservation_csv_sha256": "a289925efac6625f985d851463806060fe0764f2bf05ecc9827d72250198405d",
+      "factor": 4,
+      "particles": 3823500,
+      "refinement_manifest_sha256": "7aba59bf512931849d2ed8564d986000c14bc999d8df7b9ab151fb305f8acd1e",
+      "restart_sha256": "769dd58f21e51d798eaa901177f499c9588cc6f2849b5b96765bf774095a578d",
+      "selected_cells_csv_sha256": "3e155f3ed5f8b74b72ca44e6729de04bd05af5d485fd094b710aa8b04c69632c"
+    },
+    {
+      "accepted_level_manifest_sha256": "e03bc669a4bae680e72c1d4a94a1483f9f2d3de0b846d980d986ae6d521e8aa6",
+      "case": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k8",
+      "conservation_csv_sha256": "dd4a4df8d1389f4d1a7fb71efdf37eaa8fe1f4a6fac2715fd9a634959c2767a3",
+      "factor": 8,
+      "particles": 3867500,
+      "refinement_manifest_sha256": "2163b1dfbe9ed63b4ec3b94b10be18bf8d76db8c81feb10befb34e5d7260068c",
+      "restart_sha256": "1f98894464a6b72dd6fe3799b84d95e00d29836b859aa0e8cfad0ad617260177",
+      "selected_cells_csv_sha256": "08569d03b7ac32ea3c9f1c7527618ed1ab0295f6450ca5bd1fc4e78765105aea"
+    },
+    {
+      "accepted_level_manifest_sha256": "1afbcc7cd42b144a0768f634566e6ed580867350c92acea55ab9c1889dd00078",
+      "case": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k16",
+      "conservation_csv_sha256": "f4bdf4a49c5dde10cdfaab9ec40190f0f89d704b98b06d94e92a9fb2f1b622ae",
+      "factor": 16,
+      "particles": 3955500,
+      "refinement_manifest_sha256": "292af220143cebb785368ba8daac1e0745de44537f1d06523a4dbe8458e22098",
+      "restart_sha256": "87ddac25f6432faae34f83c00df5af2b7d7af53b2c6e3683904cab9cbf00265c",
+      "selected_cells_csv_sha256": "06acc6db1da7730323631e3996b92eadcacca594c790fbfd0f51efac1569eba9"
+    },
+    {
+      "accepted_level_manifest_sha256": "e1267029c9691e44e948b1c2b82c5bd8a3bf649980cdee7c2a82e1a090b65b1f",
+      "case": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k32",
+      "conservation_csv_sha256": "c1373c883ed9180edc05e47238da1fb00921ce589e6803bef861a621dc8a9a8d",
+      "factor": 32,
+      "particles": 4131500,
+      "refinement_manifest_sha256": "61e86b3d85349673cf8aa80d466b8f3f3c094e97291265051cc60ebd635890a3",
+      "restart_sha256": "c0611e66b30afd0d29331616edec271d89617e064a1f03ec16e9c447e13e5d4d",
+      "selected_cells_csv_sha256": "54f22307135d9137079c0815ce5ec43527370b066e6456afdfeecf120340a35a"
+    },
+    {
+      "accepted_level_manifest_sha256": "48c8be6437a5695edd73e43163820428656b0f3d6cfccc2eaa80967bf262045e",
+      "case": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k64",
+      "conservation_csv_sha256": "ea3cb3d529741aed964831712c85dab4df2b8278667f112900c37ce3c7556597",
+      "factor": 64,
+      "particles": 4483500,
+      "refinement_manifest_sha256": "30805f7fdb1f32154ea534dbde01705118899e1ceace6354896fc10d457ded72",
+      "restart_sha256": "6958624016041c5aa3998d5804b10b841860e8bb003b4ab890a0773d864c1088",
+      "selected_cells_csv_sha256": "85ad58aa3a4f32919ea0dd18852c7589a6ff3be4ab0f802a12323a13c21d8a01"
+    }
+  ],
+  "manuscript_states": [
+    "T1",
+    "T2",
+    "S1",
+    "S2"
+  ],
+  "measured_process_count": 140,
+  "probe_interval": 10,
+  "process_count": 168,
+  "schema_version": 1,
+  "solver_launched": false,
+  "states": [
+    "E1",
+    "E2",
+    "S1",
+    "S2"
+  ],
+  "steps_per_process": 200,
+  "target_cell": 620,
+  "warmup_process_count": 28
+}

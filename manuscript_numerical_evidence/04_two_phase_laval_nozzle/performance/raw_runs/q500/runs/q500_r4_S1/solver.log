@@ -1,0 +1,27 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  10
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+Build  : 10-c4cf895ad8fa
+Exec   : gpu2.9 -case /home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_matrix_20260810/q500/case
+Date   : Aug 10 2026
+Time   : 08:29:31
+Host   : "lss"
+PID    : 688460
+I/O    : uncollated
+Case   : /home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_matrix_20260810/q500/case
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+GPU2.9: compaction-seeded split-Dpre separated-backend GPU solver
+Create mesh for time = 0.11500001
+
+Particle cell path: csrCellLocalPath=1 heavyReduction=0 heavyCellThreshold=1024 tileParticles=1024 workerBlocksPerSM=4 warpAggregatedBinning=1

@@ -1,0 +1,19 @@
+{
+  "case": "dustyBox",
+  "reference": "nonlinear Schiller-Naumann homogeneous relaxation",
+  "metrics": {
+    "samples": 31,
+    "final_time": 0.0003,
+    "gas_velocity_max_abs_error": 7.303135188563292e-05,
+    "particle_velocity_max_abs_error": 0.00033380890916256956,
+    "gas_interior_std_max": 4.8525441604903795e-12,
+    "particle_interior_std_max": 8.775725321996122e-13,
+    "mixture_momentum_max_abs_error": 8.162631344599269e-05
+  },
+  "tolerances": {
+    "maximum_velocity_absolute_error": 0.002,
+    "maximum_interior_standard_deviation": 0.002,
+    "maximum_momentum_absolute_error": 0.002
+  },
+  "passed": true
+}

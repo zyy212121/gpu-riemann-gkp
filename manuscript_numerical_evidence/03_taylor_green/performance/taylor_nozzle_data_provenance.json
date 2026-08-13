@@ -1,0 +1,72 @@
+{
+  "study_root": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE",
+  "historical_state_rename": {
+    "E1": "T1"
+  },
+  "excluded_states": [
+    "E2",
+    "T2",
+    "S2"
+  ],
+  "exports": [
+    {
+      "source": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/taylorGreen_consistency_curves_20260810/taylorgreen_consistency_curves.csv",
+      "destination": "taylor_green_consistency.csv"
+    },
+    {
+      "source": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/taylorGreen_consistency_curves_20260810/taylorgreen_consistency_field_errors.csv",
+      "destination": "taylor_green_field_errors.csv"
+    },
+    {
+      "source": "/mnt/d/tempt/taylorgreen_l1_vs_l0_speedup.csv",
+      "destination": "taylor_green_l1_vs_l0_speedup.csv"
+    },
+    {
+      "source": "/mnt/d/tempt/taylorgreen_incremental_speedups.csv",
+      "destination": "taylor_green_incremental_speedups.csv"
+    },
+    {
+      "source": "/mnt/d/tempt/taylorgreen_s1_e1_cost.csv",
+      "destination": "taylor_green_s1_t1_cost.csv"
+    },
+    {
+      "source": "/mnt/d/tempt/nozzle_trajectory_maturity.csv",
+      "destination": "nozzle_trajectory_maturity.csv"
+    },
+    {
+      "source": "/mnt/d/tempt/nozzle_total_cost.csv",
+      "destination": "nozzle_total_cost.csv"
+    },
+    {
+      "source": "/mnt/d/tempt/nozzle_state_speedups.csv",
+      "destination": "nozzle_state_speedups.csv"
+    },
+    {
+      "source": "/mnt/d/tempt/nozzle_optimization_components.csv",
+      "destination": "nozzle_optimization_components.csv"
+    },
+    {
+      "source": "/mnt/d/tempt/nozzle_transient_speedups.csv",
+      "destination": "nozzle_transient_speedups.csv"
+    },
+    {
+      "source": "/mnt/d/tempt/nozzle_transient_components.csv",
+      "destination": "nozzle_transient_components.csv"
+    }
+  ],
+  "taylor_initial_metrics": {
+    "line_y": 0.09817477042468077,
+    "line_z": 0.09817477042468084,
+    "u_relative_l2": 0.0,
+    "v_relative_l2": 0.0,
+    "p_relative_l2": 0.0
+  },
+  "nozzle_field_metrics": {
+    "time_s": 0.11500001,
+    "cells": 7600,
+    "pressure_min_mpa": 0.085460285087301,
+    "pressure_max_mpa": 4.7954496413562,
+    "solid_volume_fraction_max": 0.052667947545675,
+    "gas_speed_max_m_per_s": 2361.1793103202413
+  }
+}

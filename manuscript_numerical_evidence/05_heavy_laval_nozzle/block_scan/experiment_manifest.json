@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "experiment": "GPU2.95 q500 injection-nozzle block/S2 scan",
+  "date": "2026-08-11",
+  "physics": {
+    "drag_model": "GidaspowErgunWenYu",
+    "residualRe": 0.001,
+    "gravity": [
+      0,
+      0,
+      0
+    ],
+    "consistency_gate": {
+      "states": 11,
+      "cuda_versions": [
+        "GPU2.8",
+        "GPU2.9",
+        "GPU2.95"
+      ],
+      "relative_tolerance": 5e-13,
+      "passed": true
+    }
+  },
+  "input": {
+    "initial_particles": 3790500,
+    "cells": 7600,
+    "steps_per_process": 200,
+    "dt": 5e-08,
+    "restart_sha256": [
+      "f513b66b7d285b66034ab17e3741f8b6e9ee9893d30fe6582a75c2fad818e133"
+    ]
+  },
+  "runs": {
+    "directories": 52,
+    "accepted_measured": 46,
+    "warmups": 6,
+    "all_validation_passed": true,
+    "schema_version": 3,
+    "rows_per_process": 20,
+    "authorised_states": [
+      "S1",
+      "S2"
+    ]
+  },
+  "experiment_binary_identity": {
+    "frontend_sha256": [
+      "c352e52b61c606fd3cdd8c0836740ebb698d242f15890095efadad16f97e4f9a"
+    ],
+    "backend_sha256": [
+      "a60f906fe49f4eb73262cc9464ee9125db4ba12061d64d2a4f5dfb0c18898b2a"
+    ]
+  },
+  "current_rebuild_identity": {
+    "frontend_sha256": "c352e52b61c606fd3cdd8c0836740ebb698d242f15890095efadad16f97e4f9a",
+    "backend_sha256": "97992a26e57e7d15d2060571ec1e6b3df55987e5481e67e79a533a19eaf1dbf0",
+    "note": "NVCC backend output is not byte-reproducible across identical rebuilds; experiment-run hashes above identify the measured executable."
+  },
+  "current_rebuild_runtime_gate": {
+    "variant": "S1_B128",
+    "schema_version": 3,
+    "rows": 20,
+    "sampled_particle_min": 3796279,
+    "sampled_particle_max": 3801209,
+    "heavy_blocks_per_sm": 0,
+    "passed": true,
+    "result_directory": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/gpu295_final_runtime_gate_20260811/current_rebuild_S1_B128"
+  },
+  "source_sha256": {
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/Make/files": "902b541f18e0b15e8dfa56e49ced6255e896b213b58dfed60888b5b32bfa5056",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/diluteUgkwpFoam.C": "6c5dcec34a2258e6c2724fbec3a7345c8924bc0c33a0d4219278f296a7885e9b",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/gpu/GpuBackendApi.H": "9d4faa037759c2078bc7c7b98b12422ca9ce7bb71dfb9dc066a745568800096e",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/gpu/GpuBackendClient.C": "073fbdabe6466cb8cc5c39a381ce2ba99e3e4e3297bf092db6f18b08cc4a8a62",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/gpu/GpuBackendProtocol.H": "b0fd362d410904341808a3a7c0664b402e25f2e45422cb106cf0dcb56efbbaf2",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/gpu/GpuResidentStrict.H": "b4477f3cdaca3db773f57eb3d687de75b22b95fe564cae4145adc03631021aea",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/private_backend/GpuBackendServer.C": "1e75f8729f8d89eeb3cd8e168c58e660db2f8c739049a03175e2d7cc0e219fe4",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/private_backend/GpuResidentStrict.cu": "a8c6194305425430f86f7dcbb58f9345869066f0cb2af55275f8d803a6b5a9b2",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/private_backend/build_private_backend.sh": "9dcb1ee7753cbc647520abcf1a0a407f0780a113b79449976c5fd48536ba8c4a",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/tools/build_public_frontend.sh": "b356ee2fb936d6901d55fce11e9b66fe68ecdf539182a345dceaa0761d08af2c",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/docs/GPU295_ALGORITHM_SPEC.md": "3c9753aae941dd5700af175ce1e3187999612d00181731549c83f579d01408c8",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/GPU2.95/docs/GPU295_CHANGELOG.md": "0a029f81150f5073d1914f20f2045f11017c236c85ae4e40f3681084a0c01e32",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/cases/performance/injectionNozzle/RunGpu295Timing": "b7f85c01dd349d6ab81644a81336852ea55c12be42c306d9c12ee575928839ac",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/cases/performance/injectionNozzle/RunGpu295BlockScan": "3a262553d6a9c850f7cc1f909a16244335490a8318828942a8efb9ac72e3f957",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/cases/performance/injectionNozzle/tools/set_gpu295_state.py": "b9e52465a0bf6892aef22a1d80bb7e341c6dda7b3a12eefdc37aa3ab8ca57fe9",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/cases/consistency/gidaspowDrag/run_consistency.py": "74a2d48d74c429e4cd246c697f096fd70fab859c419629d94f55af65666eca3e",
+    "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/spec/GPU295_NOZZLE_BLOCK_SCAN.md": "5ad1ececb7044a8cf81f0557a23e66ba72c08f68a25abf461cedef706693d8de"
+  },
+  "result": {
+    "s1_total_ms": {
+      "B32": 25.8897915,
+      "B64": 25.1996155,
+      "B128": 25.13868805,
+      "B256_calibration": 25.5185919
+    },
+    "s2_over_s1": {
+      "B32": {
+        "speedup": 0.9815367889,
+        "ci95": [
+          0.9765147164,
+          0.990355515
+        ]
+      },
+      "B64": {
+        "speedup": 0.9891946215,
+        "ci95": [
+          0.9775148117,
+          0.9914023946
+        ]
+      }
+    },
+    "decision": "S1 B=64 or B=128; do not enable S2 for this workload"
+  },
+  "metadata_audit": {
+    "corrected_stale_preparation_labels": 52,
+    "post_correction_errors": 0,
+    "evidence": [
+      "validation.json",
+      "ugkwpProperties",
+      "solver.log",
+      "frontend.sha256",
+      "backend.sha256"
+    ]
+  },
+  "artifacts": {
+    "conclusion": "EXPERIMENT_CONCLUSION.md",
+    "run_registry": "run_registry.csv",
+    "accepted_runs": "accepted_runs.csv",
+    "plot_directory": "D:/牛逼系列/牛逼GPU/figures"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "recorded_date": "2026-08-09",
+  "host": {
+    "os": "Ubuntu 22.04.5 LTS under WSL2",
+    "kernel": "6.6.87.2-microsoft-standard-WSL2",
+    "cpu": "Intel(R) Core(TM) i9-14900HX",
+    "logical_cpus": 32
+  },
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "uuid": "GPU-dd14b1e3-b568-4f96-a0e9-b982a4e8388d",
+    "memory_mib": 8188,
+    "driver": "592.00",
+    "observed_idle_pstate": "P4",
+    "observed_idle_sm_clock_mhz": 1890,
+    "observed_idle_memory_clock_mhz": 6000,
+    "power_limit": "not exposed by WSL"
+  },
+  "toolchain": {
+    "openfoam": "OpenFOAM 10 build 10-c4cf895ad8fa",
+    "cuda_compiler": "13.1 build 37061995",
+    "gcc": "11.4.0",
+    "python": "3.10.12"
+  },
+  "experiment_binaries": {
+    "gpu2.8_frontend_sha256": "ad889dc197f314cf4d43b7c58ab15c381514e9c535f35f54b2abbe863d48bfdc",
+    "gpu2.8_backend_sha256": "ba4189b50b4269969c9463e048e340a8b7122bd7b3a6209916eb4d591a28e3e1",
+    "gpu2.9_frontend_sha256": "0453b97f438b0262b90927837572f95599ef35ab483ec1ec25ad85cbf3ad3135",
+    "gpu2.9_backend_sha256": "d3e24899991efa30be0bc3a747ac769af20581966b4c2d56087aec6f08d9bf2d"
+  },
+  "measurement_note": "Laptop GPU clocks and power were not locked; randomized paired repeat blocks and bootstrap intervals are therefore mandatory."
+}

@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "schema_version": 3,
+  "column_count": 69,
+  "rows": 20,
+  "variant": "S2_B64",
+  "block_exponent": 6,
+  "block_threads": 64,
+  "initial_particles": 3790500,
+  "sampled_particle_min": 3796279,
+  "sampled_particle_max": 3801209,
+  "sm_count": 24,
+  "light_blocks_per_sm": 19,
+  "heavy_blocks_per_sm": 14,
+  "max_heavy_cells": 23,
+  "max_heavy_particles": 216003
+}

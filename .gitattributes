@@ -5,5 +5,8 @@
 *.jpeg binary
 *.gif binary
 *.pdf binary
+
+# Preserve manuscript evidence byte-for-byte for its bundled SHA-256 manifest.
+manuscript_numerical_evidence/** -text
 backend/linux-x86_64/gpu30CudaBackend binary
 backend/linux-x86_64/gpu30CudaBackend-twophaseflux-validation binary

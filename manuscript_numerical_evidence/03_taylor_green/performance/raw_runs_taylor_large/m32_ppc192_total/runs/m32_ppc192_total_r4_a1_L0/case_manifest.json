@@ -1,0 +1,28 @@
+{
+  "case": "Galilean-shifted particle-laden Taylor-Green vortex",
+  "mesh_per_direction": 32,
+  "cells": 32768,
+  "parcels_per_cell": 192,
+  "particles": 6291456,
+  "particle_capacity": 6292480,
+  "capacity_factor": 1.0,
+  "estimated_device_mib": 1617.23046875,
+  "restart_format": "binary",
+  "restart_bytes": 603979909,
+  "binary_chunk_particles": 262144,
+  "parcel_mass": 0.00039426519623183973,
+  "solid_volume_fraction": 0.01,
+  "injection_enabled": false,
+  "state": "L0",
+  "executable": "gpu2.8",
+  "bulk_velocity": [
+    1.0,
+    0.5,
+    0.25
+  ],
+  "tgv_amplitude": 5.0,
+  "steps": 200,
+  "delta_t": 0.0001,
+  "forced_periodic_sentinels": false,
+  "final_write_enabled": false
+}

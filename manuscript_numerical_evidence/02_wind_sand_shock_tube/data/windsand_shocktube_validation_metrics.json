@@ -1,0 +1,78 @@
+{
+  "case": "windSandShockTube",
+  "source_doi": "10.4208/cicp.OA-2021-0153",
+  "final_time": 0.2,
+  "metrics": {
+    "normalized_mean_absolute_error": {
+      "rho_g": 0.003151348544379727,
+      "rho_p": 0.02854217942835686,
+      "u_g": 0.012188492683744154,
+      "u_p": 0.0280136976029855,
+      "p_g": 0.027611470437045173,
+      "T_p": 0.10492343991179624
+    },
+    "relative_l2": {
+      "rho_g": 0.006241362622953747,
+      "rho_p": 0.015183944309067027,
+      "u_g": 0.02856580020162008,
+      "u_p": 0.06394724374732158,
+      "p_g": 0.038843915318825174,
+      "T_p": 0.07370188424814755
+    },
+    "profile_correlation": {
+      "rho_g": 0.9999277998570862,
+      "rho_p": 0.9927456740290422,
+      "u_g": 0.999135293429689,
+      "u_p": 0.9975350426948565,
+      "p_g": 0.9996554187181123,
+      "T_p": 0.995854252010461
+    },
+    "extrema": {
+      "rho_g": {
+        "numerical_min": 0.12500722705859,
+        "numerical_max": 0.99999538225201,
+        "published_min": 0.12492549788293339,
+        "published_max": 1.000409440966656
+      },
+      "rho_p": {
+        "numerical_min": 0.41875,
+        "numerical_max": 0.5910000000000001,
+        "published_min": 0.4050911422542431,
+        "published_max": 0.6021617041082932
+      },
+      "u_g": {
+        "numerical_min": 6.7050986691336e-06,
+        "numerical_max": 0.64547780054375,
+        "published_min": -0.0011763609578366852,
+        "published_max": 0.632347330113499
+      },
+      "u_p": {
+        "numerical_min": 1.7917077585567e-06,
+        "numerical_max": 0.28971919908138,
+        "published_min": -0.0016579066229508326,
+        "published_max": 0.3021408984285155
+      },
+      "p_g": {
+        "numerical_min": 0.14996458870957,
+        "numerical_max": 1.1101468523139,
+        "published_min": 0.1703216554245557,
+        "published_max": 1.1410181913858846
+      },
+      "T_p": {
+        "numerical_min": 0.94989939958853,
+        "numerical_max": 1.2821133476774,
+        "published_min": 0.8788524259565144,
+        "published_max": 1.4683292580032419
+      }
+    },
+    "all_values_finite": true,
+    "positive_density_pressure_temperature": true,
+    "conservation": {
+      "gas_mass_relative_change": -1.0871524653350346e-05,
+      "particle_mass_relative_change": 2.220446049250313e-16,
+      "stored_energy_relative_change": -0.06309632704102267
+    }
+  },
+  "tolerance": 0.15,
+  "passed": true
+}

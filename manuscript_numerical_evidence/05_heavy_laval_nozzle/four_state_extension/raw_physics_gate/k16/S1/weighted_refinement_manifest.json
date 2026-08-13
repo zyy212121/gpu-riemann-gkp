@@ -1,0 +1,24 @@
+{
+  "capacity": 4153275,
+  "chunk_particles": 262144,
+  "conservation_csv": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k16/weighted_refinement_manifest.conservation.csv",
+  "conservation_passed": true,
+  "conservation_tolerance": 5e-13,
+  "factor": 16,
+  "format": "GPU3_PARTICLES_V1_BIN",
+  "injection_mass_changed": false,
+  "manifest_copy": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k16/weighted_refinement_manifest.json",
+  "maximum_scaled_conservation_residual": 7.240170819427324e-17,
+  "output": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_weighted_tail_matrix_20260811/inputs/k16/0.11500001/gpuResidentStrictParticles.dat",
+  "output_particles": 3955500,
+  "output_sha256": "87ddac25f6432faae34f83c00df5af2b7d7af53b2c6e3683904cab9cbf00265c",
+  "seed": 30020260827,
+  "selected_cells": [
+    620
+  ],
+  "selected_cells_csv": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu30_four_state_tail_matrix_20260813/inputs/k16/weighted_refinement_manifest.selected_cells.csv",
+  "selected_source_particles": 11000,
+  "source": "/home/lss/OpenFOAM/lss-10/applications/solvers/SOURCE_STUDY_ARCHIVE/results/injectionNozzle_gpu295_block_scan_20260811/input_case/0.11500001/gpuResidentStrictParticles.dat",
+  "source_particles": 3790500,
+  "source_sha256": "f513b66b7d285b66034ab17e3741f8b6e9ee9893d30fe6582a75c2fad818e133"
+}

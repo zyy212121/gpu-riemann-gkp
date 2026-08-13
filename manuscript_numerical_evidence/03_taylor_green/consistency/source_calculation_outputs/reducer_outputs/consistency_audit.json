@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "states": [
+    "L0",
+    "L1",
+    "E1",
+    "S1"
+  ],
+  "mesh_cells": 32768,
+  "particles": 524288,
+  "times_s": [
+    0.0,
+    0.0025,
+    0.005,
+    0.0075,
+    0.01,
+    0.0125,
+    0.015,
+    0.0175,
+    0.02,
+    0.0225,
+    0.025,
+    0.0275,
+    0.03,
+    0.0325,
+    0.035,
+    0.0375,
+    0.04,
+    0.0425,
+    0.045,
+    0.0475,
+    0.05
+  ],
+  "matched_times": true,
+  "initial_restart_identical": true,
+  "initial_restart_sha256": {
+    "L0": "86a7767b6d0561a433ce40de72de40b7ac78b8d98296abc4bd1e579689ffd473",
+    "L1": "86a7767b6d0561a433ce40de72de40b7ac78b8d98296abc4bd1e579689ffd473",
+    "E1": "86a7767b6d0561a433ce40de72de40b7ac78b8d98296abc4bd1e579689ffd473",
+    "S1": "86a7767b6d0561a433ce40de72de40b7ac78b8d98296abc4bd1e579689ffd473"
+  },
+  "energy_decay": {
+    "L0": true,
+    "L1": true,
+    "E1": true,
+    "S1": true
+  },
+  "maximum_field_relative_l2_vs_L0": 6.708778763672701e-09,
+  "maximum_mixture_energy_relative_difference_vs_L0": 5.446738777909199e-12,
+  "maximum_total_momentum_relative_drift": 1.612161388908315e-05,
+  "maximum_gas_mass_relative_drift": 5.029060632855395e-06,
+  "maximum_solid_mass_relative_drift": 0.0,
+  "momentum_definition": "integral[(1-epsilonS)*rho*U + rhoS*epsilonS*Us] dV",
+  "drift_guard_note": "The time-discrete pore-volume source is not exactly telescoping; field/energy agreement versus L0 is the algorithmic consistency gate.",
+  "tolerances": {
+    "field_and_energy_relative": 1e-07,
+    "total_momentum_relative_drift": 2e-05,
+    "phase_mass_relative_drift": 1e-05
+  }
+}

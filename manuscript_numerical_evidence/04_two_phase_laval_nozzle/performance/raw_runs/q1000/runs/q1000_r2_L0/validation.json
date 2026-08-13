@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "schema_version": 2,
+  "column_count": 62,
+  "rows": 20,
+  "initial_particles": 7581000,
+  "sampled_final_particle_min": 7592567,
+  "sampled_final_particle_max": 7602409,
+  "sampled_injected_particles": 3442,
+  "sampled_removed_particles": 2018
+}
