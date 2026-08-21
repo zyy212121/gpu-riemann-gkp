@@ -1,3 +1,23 @@
+## Reviewer update: refined S2 heavy-cell scheduling
+
+The current manuscript predates a recent refinement of the S2 algorithmic level. We improved the scheduling rule for tiled reduction of heavily loaded cells and added the complete supporting data under [`manuscript_numerical_evidence/06_new_heavy_laval_nozzle/`](manuscript_numerical_evidence/06_new_heavy_laval_nozzle/). These results are proposed replacements for Fig. 10 and Fig. 11 in Section 3.2.3, **Heavy-load Laval nozzle**, if an opportunity for manuscript revision is provided.
+
+The manuscript derives a hardware-capability-based, extrapolatable criterion for the heavy-cell long-tail effect and verifies it through a thread-count scan. This criterion is fully analytic and independent of empirically fitted thresholds or coefficients. The manuscript implementation of S2 retains a small scheduling cost immediately beyond the criterion, producing slight negative acceleration in the transition region and requiring a user judgement on when to enable S2.
+
+The refined scheduler achieves stable positive acceleration once the analytic long-tail criterion is exceeded. Its largest gain over the manuscript implementation occurs in the low-load transition region, while the two S2 implementations converge toward comparable acceleration at high load. The revised S2 can remain enabled for nonuniform particle workloads, activate dynamic heavy-cell load balancing when the analytic long-tail condition appears, and operate without workload-specific prior tuning.
+
+We regard this as a potentially significant algorithmic update and would document it as part of a subsequent manuscript revision if such a revision is invited. The new archive contains the plotting data, individual timing runs, validation receipts, provenance records, and SHA-256 checksums. As the software remains under active development, the new S2 algorithm has not yet been incorporated into the public solver code. Its implementation will be synchronized with this repository after the manuscript revision has been submitted.
+
+**Proposed replacement for Fig. 10 — heavy-load Laval-nozzle speedup.**
+
+![Refined S2 heavy-load Laval-nozzle speedup](manuscript_numerical_evidence/06_new_heavy_laval_nozzle/figures/gpu30_heavy_tail_speedup.png)
+
+**Proposed replacement for Fig. 11 — CUDA stage costs across the heavy-cell load scan.**
+
+![Refined S2 heavy-load Laval-nozzle stage costs](manuscript_numerical_evidence/06_new_heavy_laval_nozzle/figures/gpu30_heavy_tail_stage_cost.png)
+
+---
+
 <p align="center">
   <img src="assets/gpu-riemann-gkp-logo.svg" alt="GPU–Riemann–GKP" width="100%">
 </p>

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "experiment": "complete pre-q=1 newS2 heavy-cell Laval-nozzle matrix",
+  "factors": [1, 2, 4, 8, 16, 32, 64],
+  "warmup_processes_per_factor": 1,
+  "measured_processes_per_factor": 5,
+  "baseline_package": "../05_heavy_laval_nozzle/weighted_tail_s1_s2",
+  "newS2_source": "source_calculation_outputs",
+  "frontend_sha256": "e40c777b1b89c363c2fd1521888d8cd42f6e35afa4cb7ad07d9b1c3831c02d5f",
+  "backend_sha256": "11a9392e63f1993f3e020ccc42c191f0ddd74fa76d99f7d45df59c4d8db67aa0",
+  "production_boundary": "This complete matrix predates the later q=1 scheduler micro-optimization accepted for production.",
+  "input_policy": "Particle restart bodies are referenced by SHA-256 and are not duplicated; timing outputs and refinement receipts are included.",
+  "bootstrap": {
+    "samples": 200000,
+    "seed": 20260820,
+    "newS2_comparisons": "independent process-median bootstrap"
+  }
+}

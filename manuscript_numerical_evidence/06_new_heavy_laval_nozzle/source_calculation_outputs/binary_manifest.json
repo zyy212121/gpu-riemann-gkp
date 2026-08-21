@@ -1,0 +1,6 @@
+{
+  "backend": "/home/lss/OpenFOAM/lss-10/platforms/linux64GccDPInt32Opt/bin/gasUGKPCudaBackend",
+  "backend_sha256": "11a9392e63f1993f3e020ccc42c191f0ddd74fa76d99f7d45df59c4d8db67aa0",
+  "frontend": "/home/lss/OpenFOAM/lss-10/platforms/linux64GccDPInt32Opt/bin/gasUGKP",
+  "frontend_sha256": "e40c777b1b89c363c2fd1521888d8cd42f6e35afa4cb7ad07d9b1c3831c02d5f"
+}
