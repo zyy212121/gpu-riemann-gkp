@@ -1,0 +1,223 @@
+from __future__ import annotations
+
+import re
+import unittest
+from pathlib import Path
+
+
+UNIFIED_ROOT = Path(__file__).resolve().parents[3]
+SHARED_WORKERS = (
+    UNIFIED_ROOT / "common/CsrPersistentQueue.cuh",
+)
+
+
+BRANCHES = {"gasUGKP": (UNIFIED_ROOT / 'applications/gasUGKP/gpu/GpuResidentStrict.H', UNIFIED_ROOT / 'applications/gasUGKP/private_backend/GpuResidentStrict.cu')}
+
+
+class SegmentedTaskQueueFamilyContract(unittest.TestCase):
+    @staticmethod
+    def _braced_block(text: str, anchor: str) -> str:
+        start = text.index(anchor)
+        opening = text.index("{", start)
+        depth = 0
+        for index in range(opening, len(text)):
+            if text[index] == "{":
+                depth += 1
+            elif text[index] == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[opening + 1 : index]
+        raise AssertionError(f"unterminated block after {anchor}")
+
+    @staticmethod
+    def _implementation_text(cuda_path: Path) -> str:
+        return "\n".join(
+            [cuda_path.read_text(encoding="utf-8")]
+            + [path.read_text(encoding="utf-8") for path in SHARED_WORKERS]
+        )
+
+    def test_l2_requires_the_cell_local_cpcst_path(self) -> None:
+        shared = (
+            UNIFIED_ROOT / "common/GpuSchedulingConfiguration.H"
+        ).read_text(encoding="utf-8")
+        self.assertIn("value.csrCellLocalPath = value.csrLevel != GpuCsrLevel::L0", shared)
+        self.assertIn("value.warpAggregatedBinning = value.csrLevel != GpuCsrLevel::L0", shared)
+        self.assertIn("value.splitPreDirectory = value.csrLevel != GpuCsrLevel::L0", shared)
+        self.assertIn("value.csrLevel == GpuCsrLevel::L2", shared)
+        for name, (header_path, _) in BRANCHES.items():
+            header = header_path.read_text(encoding="utf-8")
+            self.assertIn("GpuSchedulingConfiguration", header, name)
+
+    def test_l2_materializes_only_nonempty_tasks_and_fuses_publication(self) -> None:
+        for name, (_, cuda_path) in BRANCHES.items():
+            cuda = self._implementation_text(cuda_path)
+            for token in (
+                "CsrReductionTaskSource",
+                "countCsrReductionTasksKernel",
+                "materializeCsrReductionTasksKernel",
+                "csrCellTaskCount",
+                "csrCellTaskOffset",
+                "csrReductionTasks",
+                "csrMultiTaskCellList",
+            ):
+                self.assertIn(token, cuda, f"{name}: {token}")
+            prepare = self._braced_block(cuda, 'int prepareCsrSegmentedReductionTasks')
+            materialize = self._braced_block(cuda, '__global__ void materializeCsrReductionTasksKernel')
+            self.assertIn('cub::DeviceScan::ExclusiveSum', prepare)
+            self.assertNotIn('publishCsrReductionTaskCountKernel<<<', prepare)
+            self.assertIn('if (nTasks == 0)', materialize)
+            self.assertNotIn('atomicAdd(s.csrHeavyTaskCount, nTasks)', materialize)
+            self.assertIn('*s.csrHeavyTaskCount = s.csrCellTaskOffset[s.nCells]', materialize)
+            self.assertIn('const int taskStart = s.csrCellTaskOffset[c]', materialize)
+
+    def test_split_task_count_uses_one_logical_concatenation(self) -> None:
+        for name, (_, cuda_path) in BRANCHES.items():
+            cuda = self._implementation_text(cuda_path)
+            self.assertIn("splitLogical", cuda, name)
+            self.assertRegex(
+                cuda,
+                r"totalCount\s*=\s*baseCount\s*\+\s*injectionCount",
+                name,
+            )
+            self.assertRegex(
+                cuda,
+                r"CsrReductionTaskSource::splitLogical",
+                name,
+            )
+            self.assertIn("accumulateCsrSplitLogicalPoolTask", cuda, name)
+
+    def test_enabled_path_is_not_light_then_heavy(self) -> None:
+        for name, (_, cuda_path) in BRANCHES.items():
+            cuda = self._implementation_text(cuda_path)
+            for token in (
+                "accumulateCsrSegmentedPoolTasksPersistentKernel",
+                "accumulateCsrSegmentedMomentTasksPersistentKernel",
+                "finalizeCsrSegmentedPoolCellsKernel",
+                "finalizeCsrSegmentedMomentCellsKernel",
+            ):
+                self.assertIn(token, cuda, f"{name}: {token}")
+            self.assertIn("csrCellTaskCount[c] == 1", cuda, name)
+            self.assertIn("csrCellTaskCount[c] > 1", cuda, name)
+
+    def test_l2_advance_does_not_launch_dead_light_reductions(self) -> None:
+        for name, (_, cuda_path) in BRANCHES.items():
+            cuda = cuda_path.read_text(encoding="utf-8")
+            advance = re.search(
+                r"int\s+ugkwpGpuResidentStrictAdvance\s*\([\s\S]*?\n\}",
+                cuda,
+            )
+            self.assertIsNotNone(advance, name)
+            collision = advance.group(0).split(
+                "UGKP_DEV_PROBE_ENTER(ProbeCollisionPool);", 1
+            )[1].split("UGKP_DEV_PROBE_LEAVE(ProbeCollisionPool);", 1)[0]
+            moments = advance.group(0).split(
+                "UGKP_DEV_PROBE_ENTER(ProbeMoments);", 1
+            )[1].split("UGKP_DEV_PROBE_LEAVE(ProbeMoments);", 1)[0]
+            heavy_anchor = "if (s->csrHeavyReductionEnabled != 0)"
+            collision_heavy = self._braced_block(collision, heavy_anchor)
+            moments_heavy = self._braced_block(moments, heavy_anchor)
+            self.assertIn("launchCsrHeavyPoolReduction", collision_heavy, name)
+            self.assertNotIn("accumulatePoissonPool", collision_heavy, name)
+            self.assertIn("launchCsrHeavyMomentReduction", moments_heavy, name)
+            self.assertNotIn("accumulateParticleMoments", moments_heavy, name)
+
+    def test_zero_collision_probability_skips_eight_component_reduction(self) -> None:
+        pool = BRANCHES["gasUGKP"][1].read_text(encoding="utf-8")
+        body = self._braced_block(
+            pool, "if (PoissonMode && collisionProbability <= 0.0)"
+        )
+        self.assertNotIn("blockReduceComponentSums", body)
+        self.assertIn("csrHeavyPartials", body)
+        self.assertIn("return", body)
+
+    def test_pool_worker_selects_logical_or_single_source_once_per_task(self) -> None:
+        pool = BRANCHES["gasUGKP"][1].read_text(
+            encoding="utf-8"
+        )
+        worker = self._braced_block(
+            pool, "struct CsrPoolOperation"
+        )
+        self.assertEqual(worker.count("accumulateCsrHeavyPoolTask<PoissonMode>"), 1)
+        self.assertEqual(
+            worker.count("accumulateCsrSplitLogicalPoolTask<PoissonMode>"), 1
+        )
+        self.assertIn("const bool directParticleIndex", worker)
+        self.assertNotIn("descriptor.source", worker)
+        self.assertIn("DirectoryKind == HeavyDirectoryKind::splitBaseAndInjection", worker)
+
+    def test_workers_route_through_the_shared_persistent_protocol(self) -> None:
+        cuda = BRANCHES["gasUGKP"][1].read_text()
+        shared = (UNIFIED_ROOT / "common/CsrPersistentQueue.cuh").read_text()
+        self.assertIn("atomicAdd(s.csrHeavyTaskCursor, 1)", shared)
+        for stage in ("Pool", "Moment"):
+            worker = self._braced_block(cuda, "__global__ void accumulateCsrSegmented" + stage + "TasksPersistentKernel")
+            self.assertIn("runCsrPersistentQueue", worker)
+            self.assertNotIn("atomicAdd", worker)
+            launch = self._braced_block(cuda, "int launchCsrSegmented" + stage + "Reduction")
+            self.assertIn("resetCsrPersistentQueue(s)", launch)
+
+
+    def test_l2_occupancy_queries_the_executed_segmented_workers(self) -> None:
+        for name, (_, cuda_path) in BRANCHES.items():
+            cuda = cuda_path.read_text(encoding="utf-8")
+            occupancy_name = (
+                "configureParticleLaunchGeometry"
+                if name == "gasUGKP"
+                else "configureLaunchOccupancy"
+            )
+            occupancy = re.search(
+                rf"int\s+{occupancy_name}\s*\([\s\S]*?\n\}}",
+                cuda,
+            )
+            self.assertIsNotNone(occupancy, name)
+            body = occupancy.group(0)
+            self.assertIn("accumulateCsrSegmentedPoolTasksPersistentKernel", body, name)
+            self.assertIn("accumulateCsrSegmentedMomentTasksPersistentKernel", body, name)
+            self.assertNotIn("accumulateCsrHeavyPoolTasksPersistentKernel", body, name)
+            self.assertNotIn("accumulateCsrHeavyMomentTasksPersistentKernel", body, name)
+
+    def test_task_capacity_remains_a_conservative_logical_queue_bound(self) -> None:
+        for name, (_, cuda_path) in BRANCHES.items():
+            cuda = self._implementation_text(cuda_path)
+            allocation = re.search(
+                r"const size_t segmentedTaskCapacity\s*=(?P<body>[\s\S]*?);",
+                cuda,
+            )
+            self.assertIsNotNone(allocation, name)
+            self.assertRegex(allocation.group("body"), r"2u\s*\*\s*nc", name)
+            self.assertIn("segmented task capacity exceeds 32-bit indexing", cuda, name)
+
+    def test_split_capacity_bound_and_interval_partition(self) -> None:
+        for block in (32, 64, 128, 256):
+            for base in (
+                (0, 1, block - 1, block, block + 1),
+                (3, 17, 257, 1025, 4097),
+            ):
+                injection = tuple(reversed(base))
+                tasks = 0
+                population = 0
+                for base_count, injection_count in zip(base, injection):
+                    population += base_count + injection_count
+                    total_count = base_count + injection_count
+                    tasks += (total_count + block - 1) // block
+                    logical_lengths = [
+                        min(block, total_count - begin)
+                        for begin in range(0, total_count, block)
+                    ]
+                    self.assertEqual(sum(logical_lengths), total_count)
+                    self.assertTrue(
+                        all(0 < length <= block for length in logical_lengths)
+                    )
+                capacity = (population + block - 1) // block + 2 * len(base) + 1
+                self.assertLessEqual(tasks, capacity)
+
+    def test_small_injection_tail_does_not_create_a_second_task(self) -> None:
+        block = 256
+        base_count = 100
+        injection_count = 1
+        total_count = base_count + injection_count
+        self.assertEqual((total_count + block - 1) // block, 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

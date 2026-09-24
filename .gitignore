@@ -1,52 +1,43 @@
-# OpenFOAM frontend build products
-Make/linux*/
-*.o
-*.obj
-*.dep
-*.a
-*.so
-*.dll
-*.exe
-
-# Keep the packaged executable-only CUDA backend.
-!backend/linux-x86_64/gpu30CudaBackend
-!backend/linux-x86_64/gpu30CudaBackend-twophaseflux-validation
-
-# Python and test caches
-.pytest_cache/
-__pycache__/
-*.py[cod]
-
-# Runtime products
-log
-log.*
-log-*
-runtime*
-run.pid
-run.status
-processor*/
-postProcessing/
-core
-core.*
-
-# Generated OpenFOAM time directories
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/Make/linux*/
+**/private_backend/build/
+**/private_backend/build_logs/
+**/*.a
+**/*.o
+**/core*
+/build/
+/audit/**
+!/audit/provenance.json
+!/audit/REPORT_ZH.md
+!/audit/validation_summary.json
+!/audit/paper_evidence_comparison.json
+!/audit/imported_source_manifest.json
+/manuscript_numerical_evidence/
+/submission_addenda/
+/legacy/public-3.0/backend/linux-x86_64/
+/examples/performance/heavy_laval_inputs/
+**/constant/polyMesh/
+**/gpuResidentStrictParticles.dat
+**/gpuResidentStrictEpsGPrev.dat
+**/gpuResidentStrictSourceResidual.dat
+**/uniform/time
+**/log.*
+**/*.log
+**/runtime.*
+**/run_logs/
+**/.validation-build/
+**/.validation-bin/
+**/postProcessing/
+**/*.foam
+examples/**/result/
+examples/**/results/
 examples/**/[1-9]*/
-examples/**/0.[0-9]*/
-examples/**/*e-[0-9]*/
+examples/**/0.*/
 
-# Curated two-phase restart state required by the CP-CST examples
-!examples/pressuretest/GPU_twophase/cp_cst_test/l0/0.10000002/
-!examples/pressuretest/GPU_twophase/cp_cst_test/l0/0.10000002/**
-!examples/pressuretest/GPU_twophase/cp_cst_test/l1/0.10000002/
-!examples/pressuretest/GPU_twophase/cp_cst_test/l1/0.10000002/**
-!examples/pressuretest/GPU_twophase/cp_cst_test/e1/0.10000002/
-!examples/pressuretest/GPU_twophase/cp_cst_test/e1/0.10000002/**
-!examples/pressuretest/GPU_twophase/cp_cst_test/e2/0.10000002/
-!examples/pressuretest/GPU_twophase/cp_cst_test/e2/0.10000002/**
-!examples/pressuretest/GPU_twophase/cp_cst_test/dense/e1/0.10000002/
-!examples/pressuretest/GPU_twophase/cp_cst_test/dense/e1/0.10000002/**
-
-# Editor and downloaded-file metadata
-*:*Zone.Identifier*
-.DS_Store
-Thumbs.db
+!/audit/readonly_verification.json
+!/audit/archive_checksums.json
+!/audit/generated_case_retention.json
+!/audit/tests_final.log
+!/audit/tests_final_exit.json

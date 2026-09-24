@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -eo pipefail
+ulimit -s 65536
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${repo_root}/scripts/activate.sh"
+mkdir -p "${FOAM_USER_APPBIN}"
+python3 "${repo_root}/tools/compute_source_hash.py"
+bash "${repo_root}/applications/gasUGKP/private_backend/build_private_backend.sh"
+sha256sum "${FOAM_USER_APPBIN}/gasUGKP" "${FOAM_USER_APPBIN}/gasUGKPCudaBackend"
