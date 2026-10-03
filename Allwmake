@@ -2,6 +2,9 @@
 set -eo pipefail
 ulimit -s 65536
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Read-only source contracts run before environment activation or compiler work.
+python3 "${repo_root}/tools/managed_mirrors.py"
+python3 "${repo_root}/tools/particle_field_contract.py"
 source "${repo_root}/scripts/activate.sh"
 mkdir -p "${FOAM_USER_APPBIN}"
 python3 "${repo_root}/tools/compute_source_hash.py"

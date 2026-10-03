@@ -6,6 +6,80 @@ solid conduction, finite-contact particle-wall heat transfer, solidification,
 and radiation extensions. This standalone package can evolve independently of the engineering package;
 use its local frontend and CUDA backend together.
 
+## Shared operator implementation
+
+The common device headers own collision-pool contributions, particle moment
+contributions and publication, reduction-task operations, particle copying and
+buffer commits, pressure update components, gas fluxes, and particle transport
+geometry. Scalar precision, material properties, contact constraints, and
+wall-energy exchange are compile-time capabilities.
+
+The independent source review found remaining duplication in host orchestration,
+directory construction, and some selection/pressure/drag adapters. The two
+packages maintain mirrored common files. Shared device bodies therefore do not
+establish one complete host pipeline or prove every execution strategy optimal.
+
+Full-cell collision-pool accumulation uses named scalar accumulators. The reduction array is formed after the particle traversal, preserving contribution order, reduction order, sampling, and random-number updates. Gas, FSH, and CHT instantiate this same operator through their existing field and scalar adapters.
+
+The particle field registry defines the payload copied during compaction and
+the buffers exchanged at commit. S1 and S2 research states use the same physical particle
+operations; S2 changes how heavy-cell reductions are divided among blocks.
+The scheduling tile is calculated from the current block size, GPU SM count,
+actual kernel residency, and directory population. Selecting S2 remains the
+user's responsibility; no case-specific occupancy coefficient is used.
+
+
+Tracking has a separate grid obtained from the compiled tracking kernel's
+occupancy, B2, SM count, and particle capacity. Changing the reduction hierarchy
+does not change this tracking grid. S1 and the single-task/multi-task L2 moment
+paths use one cell publication function while retaining their reduction order.
+Every nonempty cell has an explicit reduction task in the current L2 directory;
+heavy cells are subdivided. A static gas directory type does not mean ordinary
+cells are implicit or that the directory contains only heavy cells.
+
+The gas volume-fraction source uses the linear discrete update. For a uniform
+source without spatial gradients, the mass scaling is
+`1 + dt * cepsG`; with the existing discrete volume-fraction derivative this
+matches `epsG_old / epsG_new`. The source also applies the corresponding
+momentum and pressure-work terms.
+
+
+
+## Independent review and known limits (2026-10-03)
+
+See `DEVELOPMENT_LOG_20261003_ZH.md` for the source-review scope, exact timing
+protocol, and remaining maintenance work. Operator tests include tracking-grid
+invariance and the three real moment publication paths. Thermal applications
+also test contact detachment without leaking contact age into mechanical theta.
+These checks cover local contracts; they do not certify all coupled physics.
+
+The existing gas-particle heat update uses inconsistent finite/infinite bath
+exchange amounts. The original FSH/CHT constant-Cp witness has about 1.09% scaled
+closure error, and the error depends on timestep/loading. The current fixes
+leave that witness unchanged. It remains a conservation defect, outside a safe
+small patch; it is not reported as a passing physical validation. A robust fix
+needs a shared accepted heat amount, true material enthalpy, consistent limits,
+and separate gas/wall contributions for ordinary and cold-wall particles.
+
+## CUDA operator regression checks
+
+Run the operator checks against this checkout with CUDA available:
+
+```bash
+python3 tools/validate_shared_operators.py --output /tmp/ugkp-operator-checks
+```
+
+The command uses `CUDA_HOME` (default `/usr/local/cuda`) and
+`UGKWP_CUDA_ARCH` (default `sm_89`). It compiles and launches the actual
+operator implementations and
+checks discrete volume-fraction source balances, collision selection and
+pool totals, limited-pressure flux budgets, particle moments, indexing,
+geometry, and enabled thermal payload and finite-contact ledgers. Generated
+binaries and logs stay in the specified directory outside the source tree.
+Use `--app gasUGKP`, `--app FSH`, or `--app CHT` to restrict the applications
+when they are available in the checkout. These local checks complement
+full-case validation and performance measurements.
+
 ## Build and run
 
 Requirements: Ubuntu 22.04, OpenFOAM Foundation 10, and a CUDA toolkit and GPU.
@@ -68,6 +142,19 @@ kernel occupancy, and directory population to determine its adaptive tile
 size. This scheduling tile is not a profitability criterion for selecting L2.
 `auto` remains a separate, explicitly selected mode.
 
+## Layer names across packages
+
+The standalone gas package exposes the research hierarchy `L0`, `L1`, `T1`,
+`S1`, and `S2`. The thermal package uses `L0`, `L1`, and `L2`, corresponding
+to gas research `L0`, `S1`, and `S2`. The intermediate gas research `L1` and
+`T1` are not separate thermal levels. Dictionary `gpuCsrLevel L1/L2` denotes
+the engineering paths; `gpuResearchVariant S1/S2` names the corresponding
+research states in the standalone package. These names do not add extra
+thermal levels. Explicit seven-load S2/S1 (thermal L2/L1) comparisons select
+both levels directly; `auto` is a separate optional mode. Hardware block
+configuration and adaptive heavy-cell tile calculation remain active when
+the layer is explicitly selected.
+
 ## GPU execution and retained optimizations
 
 L2 uses a persistent queue: resident blocks claim work until it is exhausted.
@@ -117,7 +204,7 @@ consume the same limited face flux. Restart recovery does not compact particles.
 | Path | Contents |
 | --- | --- |
 | `applications/gasUGKP/` | Frontend, CUDA backend, and solver tests |
-| `common/`, `gpu/` | Gas, particle, and scheduling components |
+| `common/`, `applications/gasUGKP/gpu/` | Shared gas, particle, and scheduling components, and the CUDA backend |
 | `examples/consistency/` | Physical consistency and acoustic-convergence cases |
 | `examples/paper_validation/` | Converted paper inputs preserving their discretization |
 | `examples/performance/` | Nozzle cases and seven heavy-load input levels |
@@ -195,3 +282,11 @@ gpuResidentMaxFaceWalkHops 512;
 ```
 
 The library default is 32. Increase this limit for trajectories that cross or reflect from many faces in one time step, such as passages near a narrow wedge axis. This limit counts all face-walk events, not only physical wall impacts.
+
+
+公共算子的维护所有权、字段注册、构建检查及 CUDA 调度契约见 [双库公共算子维护](docs/OPERATOR_MAINTENANCE_ZH.md)。
+
+
+### 公共算子维护入口（2026-10-03 收口）
+
+gas、FSH、CHT 的公共算子核及主机流程由 `common/` 维护。公共文件上游为 `ugkp-thermal/common`；gas 应用入口上游为独立 gas 库。修改公共实现后运行 `python3 tools/managed_mirrors.py --sync`，按登记归属同步双库；构建前检查会拒绝镜像漂移。无需分别移植三套核心实现。各应用的能力/精度适配仍需各自验证。工程结论与十对 k1/k2 结果见 [本轮结果](docs/OPERATOR_CONSOLIDATION_R2_RESULTS_ZH.md)，维护契约见 [维护说明](docs/OPERATOR_MAINTENANCE_ZH.md)。

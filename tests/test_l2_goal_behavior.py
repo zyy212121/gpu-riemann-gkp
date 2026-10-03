@@ -14,5 +14,13 @@ def test_production_behavior(tmp_path, name):
         fixture = fixture.replace("template<int BlockThreads>\n{{gatherCellLocalRange}}",
             "template<int BlockThreads, bool IndexOnly>\n{{gatherCellLocalRangeImpl}}\n"
             "template<int BlockThreads>\n{{gatherCellLocalRange}}")
+    if name == "fused_moments":
+        macros = "\n#define __forceinline__ inline\n#define GPU_OPERATOR_REAL double\n#define GPU_OPERATOR_R(x) (x)\n#define GPU_OPERATOR_THERMAL 0\n"
+        atomic = '#include "' + str(SOURCE.parents[3] / "common/operators/accumulateParticleMomentsAtomicKernel.cuh") + '"\n'
+        moments = "\n#define GPU_MOMENT_REAL double\n#define GPU_MOMENT_R(x) (x)\n#define GPU_MOMENT_THERMAL 0\n#define GPU_MOMENT_GATHER 1\n"
+        moments += '#include "' + str(SOURCE.parents[3] / "common/GpuParticleMoments.cuh") + '"\n'
+        fixture = fixture.replace("{{accumulateParticleMomentsAtomicKernel}}", macros + atomic + moments)
+        fixture = fixture.replace("template<bool HeavyReductionEnabled, bool GatherSurvivors = false>\n{{accumulateParticleMomentsSegmentedKernel}}", "")
+        fixture = fixture.replace("{{accumulateCsrHeavyMomentTask}}", "")
     fixture = re.sub(r"\{\{(\w+)\}\}", lambda match: function(source, match[1]), fixture)
     compile_run(tmp_path, fixture)
