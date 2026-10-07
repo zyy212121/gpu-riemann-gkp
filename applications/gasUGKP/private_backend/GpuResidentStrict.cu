@@ -30,6 +30,11 @@
 #include <cuda_runtime.h>
 
 #include "GpuBackendApi.H"
+#include "gasTransport/GasBuildConfig.H"
+#include "gasTransport/GasStateView.H"
+#include "gasTransport/GasCapabilities.H"
+#include "gasTransport/GasMechanismIO.H"
+#include "SharedGasTrialFields.H"
 #include "CharacteristicMuscl.cuh"
 #include "OpenFoamLimitedLinear.cuh"
 #include "OpenFoamViscousFlux.cuh"
@@ -110,6 +115,12 @@ struct PressureProjectionCell
 struct DeviceState
 {
     DeviceState* deviceState = nullptr;
+    ugkwp::GasSpeciesState<double,ugkwp::compiledGasSpecies> gasSpecies;
+    ugkwp::GasSpeciesState<double,ugkwp::compiledGasSpecies> gasRejectedView;
+    bool gasModelPoisoned = false;
+    bool gasInitialFieldsUploaded = false;
+    bool gasSpeciesUploaded = false;
+    SharedGasTrialStorage gasTrial;
 
     int nCells = 0;
     int nFaces = 0;
@@ -156,6 +167,8 @@ struct DeviceState
                                                                              
                                                                              
     int hostGasFluxScheme = 2;
+    int hostGasReconstruction = 0;
+    int hostGasLimiter = 0;
     int hostGasTimeIntegrator = 1;
     int hostTurbulenceModel = 0;
     int hostDragModel = 0;
@@ -879,6 +892,11 @@ int validateState(DeviceState* s, const char* action)
         );
         return 1;
     }
+    if (s->gasModelPoisoned)
+    {
+        setLastErrorText("shared gas device view rollback failed; resident must be destroyed");
+        return 1;
+    }
     return 0;
 }
 
@@ -944,6 +962,10 @@ void scrubHostCalculationScalars(DeviceState* s)
     s->TpMax = 0.0;
 }
 
+#include "SharedGasStorage.cuh"
+
+void releaseSharedGasTrialStorage(SharedGasTrialStorage& storage);
+
 void releaseState(DeviceState* s)
 {
     if (s == nullptr)
@@ -951,6 +973,9 @@ void releaseState(DeviceState* s)
         return;
     }
 
+    releaseSharedGasTrialStorage(s->gasTrial);
+    releaseSharedGasSpecies(s->gasSpecies);
+    releaseSharedGasSpecies(s->gasRejectedView);
     if (s->gasGraphExec) cudaGraphExecDestroy(s->gasGraphExec);
     if (s->gasGraph) cudaGraphDestroy(s->gasGraph);
     if (s->gasCaptureStream) cudaStreamDestroy(s->gasCaptureStream);
@@ -1741,95 +1766,7 @@ struct GasPrimDevice
 
 #include "operators/makeGasPrimDevice.cuh"
 
-__device__ GasPrimDevice riemannFacePrimitiveForGradient
-(
-    const DeviceState& s,
-    const int c,
-    const int f
-)
-{
-    GasPrimDevice centre = makeGasPrimDevice
-    (
-        s.rho[c], s.Ux[c], s.Uy[c], s.Uz[c], s.p[c],
-        s.Rgas, s.rhoMin, s.TgasMin
-    );
-    centre.T = clampMin(finiteOr(s.Tgas[c], centre.T), s.TgasMin);
-    if (f < s.nInternalFaces || isPeriodicFace(s, f))
-    {
-        const int own = s.faceOwner[f];
-        const int nei = s.faceNeighbour[f];
-        const int other = c == own ? nei : own;
-        if (other < 0 || other >= s.nCells)
-        {
-            return centre;
-        }
-        GasPrimDevice adjacent = makeGasPrimDevice
-        (
-            s.rho[other], s.Ux[other], s.Uy[other], s.Uz[other], s.p[other],
-            s.Rgas, s.rhoMin, s.TgasMin
-        );
-        adjacent.T = clampMin
-        (
-            finiteOr(s.Tgas[other], adjacent.T),
-            s.TgasMin
-        );
-        const double ownerWeight = clampRange(s.faceWeight[f], 0.0, 1.0);
-        const double wc = c == own ? ownerWeight : 1.0 - ownerWeight;
-        GasPrimDevice face = makeGasPrimDevice
-        (
-            wc*centre.rho + (1.0 - wc)*adjacent.rho,
-            wc*centre.ux + (1.0 - wc)*adjacent.ux,
-            wc*centre.uy + (1.0 - wc)*adjacent.uy,
-            wc*centre.uz + (1.0 - wc)*adjacent.uz,
-            wc*centre.p + (1.0 - wc)*adjacent.p,
-            s.Rgas, s.rhoMin, s.TgasMin
-        );
-        face.T = wc*centre.T + (1.0 - wc)*adjacent.T;
-        return face;
-    }
-
-    const int kind = s.riemannBoundaryKind[f];
-    if (kind == 4 || kind == 3)
-    {
-        return centre;
-    }
-    if (kind == 1)
-    {
-        const double area = clampMin(s.magSf[f], OfSmall);
-        const double nx = s.Sfx[f]/area;
-        const double ny = s.Sfy[f]/area;
-        const double nz = s.Sfz[f]/area;
-        const double un = centre.ux*nx + centre.uy*ny + centre.uz*nz;
-        GasPrimDevice face = centre;
-        face.ux -= un*nx;
-        face.uy -= un*ny;
-        face.uz -= un*nz;
-        return face;
-    }
-
-    if (kind == 2)
-    {
-        GasPrimDevice wall = centre;
-        wall.ux = s.riemannBoundaryUFix[f] != 0
-          ? finiteOr(s.riemannBoundaryUx[f], 0.0) : 0.0;
-        wall.uy = s.riemannBoundaryUFix[f] != 0
-          ? finiteOr(s.riemannBoundaryUy[f], 0.0) : 0.0;
-        wall.uz = s.riemannBoundaryUFix[f] != 0
-          ? finiteOr(s.riemannBoundaryUz[f], 0.0) : 0.0;
-        if (s.riemannBoundaryTFix[f] != 0)
-        {
-            wall.T = clampMin
-            (
-                finiteOr(s.riemannBoundaryT[f], centre.T),
-                s.TgasMin
-            );
-            wall.rho = wall.p/clampMin(s.Rgas*wall.T, OfSmall);
-        }
-        return wall;
-    }
-
-    return riemannBoundaryState(s, f, centre);
-}
+#include "operators/riemannFacePrimitiveForGradient.cuh"
 
 #include "operators/computeGasPrimitiveGradientsKernel.cuh"
 
@@ -1912,6 +1849,8 @@ int applyGasGravitySource
     }
     return 0;
 }
+
+#include "SharedGasTrialPolicy.cuh"
 
 #include "operators/recoverPrimitivesKernel.cuh"
 
@@ -4218,6 +4157,8 @@ constexpr bool developmentProbeIncludesScheduling = true;
 
 #endif
 
+#include "SharedGasAdapter.cuh"
+
 extern "C" const char* ugkwpGpuResidentStrictLastError()
 {
     return lastError;
@@ -4700,6 +4641,8 @@ extern "C" int ugkwpGpuResidentStrictCreate
     s->gasRobustFallback = gasRobustFallback;
     s->turbulenceModel = turbulenceModel;
     s->hostGasFluxScheme = gasFluxScheme;
+    s->hostGasReconstruction = gasReconstruction;
+    s->hostGasLimiter = gasLimiter;
     s->hostGasTimeIntegrator = gasTimeIntegrator;
     s->hostTurbulenceModel = turbulenceModel;
     s->hostDragModel = dragModel;
@@ -5511,6 +5454,7 @@ extern "C" int ugkwpGpuResidentStrictUploadFields
         }
     }
 
+    s->gasInitialFieldsUploaded = true;
     scrubHostCalculationScalars(s);
     return 0;
 }
@@ -5555,6 +5499,12 @@ extern "C" int ugkwpGpuResidentStrictConfigureSst
     {
         setLastErrorText("SST configuration requires turbulenceModel=3");
         return 1;
+    }
+    if (s->gasSpecies.mode != ugkwp::GasMode::SingleLegacy)
+    {
+        const auto capability=ugkwp::validateGasCapabilities
+            (sharedGasCapabilityRequest(s,s->gasSpecies.mode,wallTreatment));
+        if(!capability){setLastErrorText(capability.message);return 1;}
     }
     if
     (
@@ -5732,7 +5682,9 @@ extern "C" int ugkwpGpuResidentStrictComputeGasCourant
     }
     *maxCo = 0.0;
 
-    if (tuneFixedWorkBlockThreads(s, dt, scheduleTime) != 0)
+    s->gasTrial.targetMaxCo = targetMaxCo;
+    if (s->gasSpecies.mode == ugkwp::GasMode::SingleLegacy
+        && tuneFixedWorkBlockThreads(s, dt, scheduleTime) != 0)
     {
         return 1;
     }
@@ -5987,7 +5939,8 @@ extern "C" int ugkwpGpuResidentStrictAdvance
         const char* value = std::getenv("UGKP_GAS_GRAPH");
         s->gasGraphMode = !value || std::strcmp(value, "1") == 0;
     }
-    if (s->gasGraphMode && !s->particlesMayBePresent && !s->hostGravityActive)
+    if (s->gasSpecies.mode == ugkwp::GasMode::SingleLegacy
+        && s->gasGraphMode && !s->particlesMayBePresent && !s->hostGravityActive)
         return advancePureGasGraph(s, dt, simulationTime);
 #endif
 
@@ -6547,7 +6500,8 @@ extern "C" int ugkwpGpuResidentStrictAdvanceGasOnly
     {
         return 1;
     }
-    if (tuneFixedWorkBlockThreads(s, dt, simulationTime) != 0)
+    if (s->gasSpecies.mode == ugkwp::GasMode::SingleLegacy
+        && tuneFixedWorkBlockThreads(s, dt, simulationTime) != 0)
     {
         return 1;
     }
@@ -6564,6 +6518,16 @@ extern "C" int ugkwpGpuResidentStrictAdvanceGasOnly
 
     if (!std::isfinite(simulationTime) || simulationTime < 0.0)
         return 1;
+    if (s->gasSpecies.mode != ugkwp::GasMode::SingleLegacy)
+    {
+        if (!s->gasSpeciesUploaded)
+        {
+            setLastErrorText("mixture advance requires initialized species state");
+            return 1;
+        }
+        const GasRequestedIntervalControls<double> controls;
+        return advanceGasRequestedInterval<SharedGasTrialPolicy>(s, dt, simulationTime, controls);
+    }
 #ifndef UGKP_DEVELOPMENT_PROBES
     if (s->gasGraphMode < 0)
     {
