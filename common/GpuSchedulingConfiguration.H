@@ -125,28 +125,27 @@ inline GpuSchedulingConfiguration readGpuSchedulingConfiguration
     value.maxDeltaTGrowth =
         properties.lookupOrDefault<scalar>("gpuResidentMaxDeltaTGrowth", 1.05);
     value.csrLevel = readGpuCsrLevel(properties);
+    if (properties.found("gpuCsrHeavyReductionAutoInterval")
+     && value.csrLevel != GpuCsrLevel::automatic)
+    {
+        FatalErrorInFunction
+            << "gpuCsrHeavyReductionAutoInterval is only valid with gpuCsrLevel auto"
+            << exit(FatalError);
+    }
+    if (value.csrLevel == GpuCsrLevel::automatic)
+    {
+        value.heavyReductionAutoInterval = properties.lookupOrDefault<label>
+        (
+            "gpuCsrHeavyReductionAutoInterval", 100
+        );
+        value.heavyReductionMode = GpuHeavyReductionMode::automatic;
+    }
     value.csrCellLocalPath = value.csrLevel != GpuCsrLevel::L0;
     value.warpAggregatedBinning = value.csrLevel != GpuCsrLevel::L0;
     value.splitPreDirectory = value.csrLevel != GpuCsrLevel::L0;
     if (value.csrLevel == GpuCsrLevel::L2)
     {
         value.heavyReductionMode = GpuHeavyReductionMode::enabled;
-    }
-    else if (value.csrLevel == GpuCsrLevel::automatic)
-    {
-        value.heavyReductionMode = GpuHeavyReductionMode::automatic;
-        value.heavyReductionAutoInterval =
-            properties.lookupOrDefault<label>
-            (
-                "gpuCsrHeavyReductionAutoInterval",
-                100
-            );
-    }
-    else if (properties.found("gpuCsrHeavyReductionAutoInterval"))
-    {
-        FatalErrorInFunction
-            << "gpuCsrHeavyReductionAutoInterval is only valid when "
-            << "gpuCsrLevel auto" << exit(FatalError);
     }
     value.particleBlockThreads =
         properties.lookupOrDefault<label>("gpuParticleBlockThreads", 128);

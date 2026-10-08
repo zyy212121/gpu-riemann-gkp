@@ -1,9 +1,11 @@
 // Exports gas primitive-gradient kernels and the SST wall-distance/viscosity helper used by them.
 #pragma once
+#include "gasTransport/GasGeometryValidation.H"
 // One operator implementation; scalar/time adapters are compile-time only.
-__global__ void computeGasPrimitiveGradientsKernel(DeviceState* sp)
+template<class GasState>
+__global__ void computeGasPrimitiveGradientsKernel(GasState* sp)
 {
-    DeviceState& s = *sp;
+    GasState& s = *sp;
     const int c = blockIdx.x*blockDim.x + threadIdx.x;
     if (c >= s.nCells)
     {
@@ -45,17 +47,65 @@ __global__ void computeGasPrimitiveGradientsKernel(DeviceState* sp)
     s.gradUzX[c] = guzx*invV; s.gradUzY[c] = guzy*invV; s.gradUzZ[c] = guzz*invV;
     s.gradPx[c] = gpx*invV; s.gradPy[c] = gpy*invV; s.gradPz[c] = gpz*invV;
     s.gradTX[c] = gtx*invV; s.gradTY[c] = gty*invV; s.gradTZ[c] = gtz*invV;
+    if constexpr (ugkwp::GasStateTraits<GasState>::speciesCount > 0)
+    {
+        if (ugkwp::mixtureGasActive(s))
+            for(int k=0;k<ugkwp::GasStateTraits<GasState>::speciesCount;++k)
+            {
+                GPU_OPERATOR_REAL gx=GPU_OPERATOR_R(0.0),gy=GPU_OPERATOR_R(0.0),gz=GPU_OPERATOR_R(0.0);
+                const GPU_OPERATOR_REAL centre=s.gasSpecies.rho[k*s.nCells+c]/s.rho[c];
+                for(int i=0;i<count;++i)
+                {
+                    const int f=s.cellFaceId[start+i];
+                    if(f<0||f>=s.nFaces)continue;
+                    const int own=s.faceOwner[f],nei=coupledFaceNeighbour(s,f);
+                    const GPU_OPERATOR_REAL sign=own==c?GPU_OPERATOR_R(1.0):-GPU_OPERATOR_R(1.0);
+                    GPU_OPERATOR_REAL value=centre;
+                    if(nei>=0)
+                    {
+                        const GPU_OPERATOR_REAL w=clampRange(s.faceWeight[f],GPU_OPERATOR_R(0.0),GPU_OPERATOR_R(1.0));
+                        value=w*s.gasSpecies.rho[k*s.nCells+own]/s.rho[own]
+                            +(GPU_OPERATOR_R(1.0)-w)*s.gasSpecies.rho[k*s.nCells+nei]/s.rho[nei];
+                    }
+                    else if(s.riemannBoundaryKind[f]==0 && s.gasSpecies.compositionBoundaryFixed[f]!=0)
+                        value=s.gasSpecies.boundaryMassFraction[k*s.nFaces+f];
+                    gx+=sign*s.Sfx[f]*value;gy+=sign*s.Sfy[f]*value;gz+=sign*s.Sfz[f]*value;
+                }
+                s.gasSpecies.gradX[k*s.nCells+c]=gx*invV;
+                s.gasSpecies.gradY[k*s.nCells+c]=gy*invV;
+                s.gasSpecies.gradZ[k*s.nCells+c]=gz*invV;
+                if(k==ugkwp::GasStateTraits<GasState>::speciesCount-1)
+                {
+                    GPU_OPERATOR_REAL sumX=GPU_OPERATOR_R(0.0),sumY=GPU_OPERATOR_R(0.0),sumZ=GPU_OPERATOR_R(0.0);
+                    for(int j=0;j<k;++j)
+                    {sumX+=s.gasSpecies.gradX[j*s.nCells+c];sumY+=s.gasSpecies.gradY[j*s.nCells+c];sumZ+=s.gasSpecies.gradZ[j*s.nCells+c];}
+                    s.gasSpecies.gradX[k*s.nCells+c]=-sumX;
+                    s.gasSpecies.gradY[k*s.nCells+c]=-sumY;
+                    s.gasSpecies.gradZ[k*s.nCells+c]=-sumZ;
+                }
+            }
+    }
 }
 
+template<class GasState>
 __device__ GPU_OPERATOR_REAL sstDynamicOmegaWallValue
 (
-    const DeviceState& s,
+    const GasState& s,
     const int f,
     const int owner
 )
 {
     const GPU_OPERATOR_REAL rhoSafe = clampMin(riemannFacePrimitiveForGradient(s, owner, f).rho, s.rhoMin);
     const GPU_OPERATOR_REAL nu = s.gasMu/rhoSafe;
+    if (s.sstWallTreatment == 0)
+    {
+        // OF10 viscous omegaWallFunction branch: wall nu, cell wall distance.
+        // This constrains the adjacent cell, not a wall Dirichlet value.
+        return ugkwp::sstLowReWallOmega
+        (
+            nu, s.sstWallDistance[owner], s.sstCoefficients
+        );
+    }
     const GPU_OPERATOR_REAL wallUx = s.riemannBoundaryUFix[f] != 0
       ? finiteOr(s.riemannBoundaryUx[f], GPU_OPERATOR_R(0.0)) : GPU_OPERATOR_R(0.0);
     const GPU_OPERATOR_REAL wallUy = s.riemannBoundaryUFix[f] != 0
@@ -80,9 +130,10 @@ __device__ GPU_OPERATOR_REAL sstDynamicOmegaWallValue
     ).omega;
 }
 
+template<class GasState>
 __device__ GPU_OPERATOR_REAL sstBoundaryValue
 (
-    const DeviceState& s,
+    const GasState& s,
     const int f,
     const int owner,
     const bool omegaField
@@ -96,16 +147,7 @@ __device__ GPU_OPERATOR_REAL sstBoundaryValue
         {
             return s.sstWallTreatment == 0 ? GPU_OPERATOR_R(0.0) : centre;
         }
-        if (s.sstWallTreatment == 0)
-        {
-            const GPU_OPERATOR_REAL rhoSafe = clampMin(s.rho[owner], s.rhoMin);
-            return ugkwp::sstLowReWallOmega
-            (
-                s.gasMu/rhoSafe,
-                s.sstWallDistance[owner],
-                s.sstCoefficients
-            );
-        }
+        // Copy constrained cell omega to the wall: zero wall diffusion flux.
         return centre;
     }
     if (boundaryKind == 1 || boundaryKind == 3 || boundaryKind == 4)
@@ -123,29 +165,36 @@ __device__ GPU_OPERATOR_REAL sstBoundaryValue
     }
     if (mode == 2)
     {
-        const GPU_OPERATOR_REAL outwardMassDirection =
+        GPU_OPERATOR_REAL outwardMassDirection =
             s.Ux[owner]*s.Sfx[f]
           + s.Uy[owner]*s.Sfy[f]
           + s.Uz[owner]*s.Sfz[f];
+        if constexpr(ugkwp::GasGeometryCapability<GasState>::value)
+            if(ugkwp::gasMovingGeometry(s))
+            {
+                ugkwp::GasFaceFrame<GPU_OPERATOR_REAL> frame;
+                if(!ugkwp::gasGeometryFaceFrame(s,f,s.gasGeometry.interval,frame))
+                {if(!ugkwp::gasRecordFaceFailure(s,f,ugkwp::GasTransportCode::InvalidGeometry))asm("trap;");return centre;}
+                outwardMassDirection-=frame.meshVolumeRate;
+            }
         return outwardMassDirection >= GPU_OPERATOR_R(0.0) ? centre : prescribed;
     }
     return centre;
 }
 
-__global__ void applySstWallFunctionStateKernel(DeviceState* sp)
+template<class GasState>
+__device__ void applySstWallFunctionStateCell(GasState& s, const int c)
 {
-    DeviceState& s = *sp;
-    const int c = blockIdx.x*blockDim.x + threadIdx.x;
     if
     (
         c >= s.nCells
      || s.sstConfigured == 0
-     || s.sstWallTreatment != 1
     )
     {
         return;
     }
 
+    const GPU_OPERATOR_REAL beforeK=s.rhoK[c],beforeOmega=s.rhoOmega[c];
     GPU_OPERATOR_REAL omegaSum = GPU_OPERATOR_R(0.0);
     int wallCount = 0;
     const int start = s.cellPlaneStart[c];
@@ -175,11 +224,22 @@ __global__ void applySstWallFunctionStateKernel(DeviceState* sp)
         s.omega[c] = omegaTarget;
         s.rhoOmega[c] = rhoSafe*omegaTarget;
     }
+    ugkwp::gasSstAuditConstraint(s,c,beforeK,beforeOmega);
 }
 
-__global__ void initialiseSstConservativeStateKernel(DeviceState* sp)
+template<class GasState>
+__global__ void applySstWallFunctionStateKernel(GasState* sp)
 {
-    DeviceState& s = *sp;
+    applySstWallFunctionStateCell
+    (
+        *sp, blockIdx.x*blockDim.x + threadIdx.x
+    );
+}
+
+template<class GasState>
+__global__ void initialiseSstConservativeStateKernel(GasState* sp)
+{
+    GasState& s = *sp;
     const int c = blockIdx.x*blockDim.x + threadIdx.x;
     if (c == 0 && s.sstConfigured != 0)
     {
@@ -210,14 +270,16 @@ __global__ void initialiseSstConservativeStateKernel(DeviceState* sp)
     s.nut[c] = GPU_OPERATOR_R(0.0);
 }
 
-__global__ void recoverSstPrimitivesKernel(DeviceState* sp)
+template<class GasState>
+__global__ void recoverSstPrimitivesKernel(GasState* sp)
 {
-    DeviceState& s = *sp;
+    GasState& s = *sp;
     const int c = blockIdx.x*blockDim.x + threadIdx.x;
     if (c >= s.nCells || s.sstConfigured == 0)
     {
         return;
     }
+    const GPU_OPERATOR_REAL beforeK=s.rhoK[c],beforeOmega=s.rhoOmega[c];
     const GPU_OPERATOR_REAL rhoSafe = clampMin(s.rho[c], s.rhoMin);
     const GPU_OPERATOR_REAL rhoKFloor = rhoSafe*s.sstKMin;
     const GPU_OPERATOR_REAL rhoOmegaFloor = rhoSafe*s.sstOmegaMin;
@@ -226,4 +288,13 @@ __global__ void recoverSstPrimitivesKernel(DeviceState* sp)
         clampMin(finiteOr(s.rhoOmega[c], rhoOmegaFloor), rhoOmegaFloor);
     s.k[c] = s.rhoK[c]/rhoSafe;
     s.omega[c] = s.rhoOmega[c]/rhoSafe;
+    ugkwp::gasSstAuditConstraint(s,c,beforeK,beforeOmega);
+    if (s.sstWallTreatment == 0 || s.sstWallTreatment == 1)
+    {
+        // Project the wall-adjacent omega equation after Euler updates and RK
+        // blends. Refresh the target from recovered k and the current gas state
+        // (including wall viscosity); do not freeze k or the gas equations.
+        // This is an explicit stage constraint, not an implicit OF10 solve.
+        applySstWallFunctionStateCell(s, c);
+    }
 }

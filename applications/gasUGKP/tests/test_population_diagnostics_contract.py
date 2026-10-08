@@ -40,7 +40,9 @@ def test_injection_count_has_no_per_particle_diagnostic_atomic():
 
 def test_pretransport_count_reuses_an_existing_cell_kernel():
     assert "diagnosticPreTransportParticleCount" in CUDA
-    assert "*s.diagnosticPreTransportParticleCount" in CUDA
+    owner = (ROOT / "../../common/operators/clearPoissonThermalPoolKernel.cuh").read_text()
+    assert "*s.diagnosticPreTransportParticleCount" in owner
+    assert "#ifdef UGKP_DEVELOPMENT_PROBES" in owner
     assert "clearPoissonThermalPoolKernel" in CUDA
 
 
