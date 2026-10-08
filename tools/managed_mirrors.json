@@ -420,11 +420,6 @@
       "downstream": "ugkp-thermal"
     },
     {
-      "path": "applications/gasUGKP/tests/test_particle_cell_path_runtime_contract.py",
-      "upstream": "gpu-riemann-gkp-main",
-      "downstream": "ugkp-thermal"
-    },
-    {
       "path": "applications/gasUGKP/tests/test_population_diagnostics_contract.py",
       "upstream": "gpu-riemann-gkp-main",
       "downstream": "ugkp-thermal"
@@ -501,6 +496,21 @@
     },
     {
       "path": "common/CsrPersistentQueue.cuh",
+      "upstream": "ugkp-thermal",
+      "downstream": "gpu-riemann-gkp-main"
+    },
+    {
+      "path": "common/GpuAutomaticCsrSchedule.cuh",
+      "upstream": "ugkp-thermal",
+      "downstream": "gpu-riemann-gkp-main"
+    },
+    {
+      "path": "common/GpuAutomaticCsrScheduleFields.inl",
+      "upstream": "ugkp-thermal",
+      "downstream": "gpu-riemann-gkp-main"
+    },
+    {
+      "path": "common/GpuBlockComponentReduction.cuh",
       "upstream": "ugkp-thermal",
       "downstream": "gpu-riemann-gkp-main"
     },
@@ -685,6 +695,11 @@
       "downstream": "gpu-riemann-gkp-main"
     },
     {
+      "path": "common/GpuParticleDirectoryHostPolicy.cuh",
+      "upstream": "ugkp-thermal",
+      "downstream": "gpu-riemann-gkp-main"
+    },
+    {
       "path": "common/GpuParticleFields.cuh",
       "upstream": "ugkp-thermal",
       "downstream": "gpu-riemann-gkp-main"
@@ -795,6 +810,11 @@
       "downstream": "gpu-riemann-gkp-main"
     },
     {
+      "path": "common/GpuPressureUnsortedAlgebra.cuh",
+      "upstream": "ugkp-thermal",
+      "downstream": "gpu-riemann-gkp-main"
+    },
+    {
       "path": "common/GpuReductionTaskCount.cuh",
       "upstream": "ugkp-thermal",
       "downstream": "gpu-riemann-gkp-main"
@@ -811,16 +831,6 @@
     },
     {
       "path": "common/GpuReductionTaskWrite.cuh",
-      "upstream": "ugkp-thermal",
-      "downstream": "gpu-riemann-gkp-main"
-    },
-    {
-      "path": "common/GpuResearchHierarchy.H",
-      "upstream": "ugkp-thermal",
-      "downstream": "gpu-riemann-gkp-main"
-    },
-    {
-      "path": "common/GpuSchedulingConfiguration.H",
       "upstream": "ugkp-thermal",
       "downstream": "gpu-riemann-gkp-main"
     },
@@ -1160,6 +1170,11 @@
       "downstream": "gpu-riemann-gkp-main"
     },
     {
+      "path": "common/operators/clearPoissonThermalPoolKernel.cuh",
+      "upstream": "ugkp-thermal",
+      "downstream": "gpu-riemann-gkp-main"
+    },
+    {
       "path": "common/operators/clearSolidCell.cuh",
       "upstream": "ugkp-thermal",
       "downstream": "gpu-riemann-gkp-main"
@@ -1255,6 +1270,11 @@
       "downstream": "gpu-riemann-gkp-main"
     },
     {
+      "path": "common/operators/maximumDirectoryOccupancyKernel.cuh",
+      "upstream": "ugkp-thermal",
+      "downstream": "gpu-riemann-gkp-main"
+    },
+    {
       "path": "common/operators/mobilePackingParticleEligible.cuh",
       "upstream": "ugkp-thermal",
       "downstream": "gpu-riemann-gkp-main"
@@ -1281,6 +1301,11 @@
     },
     {
       "path": "common/operators/prepareMobilePackingProjectionKernel.cuh",
+      "upstream": "ugkp-thermal",
+      "downstream": "gpu-riemann-gkp-main"
+    },
+    {
+      "path": "common/operators/preparePoissonPoolSamplingKernel.cuh",
       "upstream": "ugkp-thermal",
       "downstream": "gpu-riemann-gkp-main"
     },
@@ -1390,11 +1415,6 @@
       "downstream": "gpu-riemann-gkp-main"
     },
     {
-      "path": "tools/managed_mirrors.json",
-      "upstream": "ugkp-thermal",
-      "downstream": "gpu-riemann-gkp-main"
-    },
-    {
       "path": "tools/managed_mirrors.py",
       "upstream": "ugkp-thermal",
       "downstream": "gpu-riemann-gkp-main"
@@ -1415,16 +1435,21 @@
       "applications/gasUGKP/tests/source_contract_utils.py",
       "applications/gasUGKP/tests/test_common_gas_numerics_source_contract.py",
       "applications/gasUGKP/tests/test_jamming_pressure_contract.py",
+      "applications/gasUGKP/tests/test_particle_cell_path_runtime_contract.py",
       "applications/gasUGKP/tests/test_s1_kernel_resource_contract.py",
       "applications/gasUGKP/tests/test_source_hash_contract.py",
       "applications/gasUGKP/tests/test_strict_csr_level_contract.py",
       "applications/gasUGKP/tests/test_unified_scheduling_tools_contract.py",
-      "applications/gasUGKP/tests/test_wall_gks_contract.py"
+      "applications/gasUGKP/tests/test_wall_gks_contract.py",
+      "common/GpuResearchHierarchy.H",
+      "common/GpuSchedulingConfiguration.H",
+      "tools/managed_mirrors.json"
     ],
     "ugkp-thermal": [
       "applications/gasUGKP/tests/source_contract_utils.py",
       "applications/gasUGKP/tests/test_common_gas_numerics_source_contract.py",
       "applications/gasUGKP/tests/test_jamming_pressure_contract.py",
+      "applications/gasUGKP/tests/test_particle_cell_path_runtime_contract.py",
       "applications/gasUGKP/tests/test_s1_kernel_resource_contract.py",
       "applications/gasUGKP/tests/test_source_hash_contract.py",
       "applications/gasUGKP/tests/test_strict_csr_level_contract.py",
@@ -1438,6 +1463,8 @@
       "common/GpuPressureConstrainedPhysics.cuh",
       "common/GpuPressureUnsortedConstrained.cuh",
       "common/GpuRadiationContributions.cuh",
+      "common/GpuSchedulingConfiguration.H",
+      "common/GpuThermalLaunchOccupancy.cuh",
       "common/GpuThermalParticleFinalization.cuh",
       "common/GpuThermalParticleRelaxation.cuh",
       "common/GpuThermalParticleRestartCodec.H",
@@ -1445,28 +1472,30 @@
       "common/operators/FiniteContactRelaxation.inl",
       "common/operators/accumulateParticleWallRepresentedContactAreaKernel.cuh",
       "common/operators/accumulatePoissonPoolParticlesByCellKernel.cuh",
+      "common/operators/appendSelectedStuckParticleIndex.cuh",
       "common/operators/applyCollisionalPressureProjectionKernel.cuh",
       "common/operators/applyEulerianGasSolidDragKernelStatic.cuh",
       "common/operators/applyGasGravityKernel.cuh",
+      "common/operators/atomicAddParticleWallEnergyByFace.cuh",
       "common/operators/clearColdWallParticleState.cuh",
-      "common/operators/clearPoissonThermalPoolKernel.cuh",
       "common/operators/clearSplitPreInjectionBinsKernel.cuh",
       "common/operators/correctOnePoissonThermalizedParticlePath.cuh",
       "common/operators/countCsrReductionTasksKernel.cuh",
       "common/operators/dragInverseTimeDevice.cuh",
       "common/operators/finalizeOneThermalizedParticlePath.cuh",
-      "common/operators/maximumDirectoryOccupancyKernel.cuh",
       "common/operators/particleSpecificHeatDevice.cuh",
       "common/operators/particleTemperatureFromSpecificEnthalpyDevice.cuh",
-      "common/operators/preparePoissonPoolSamplingKernel.cuh",
       "common/operators/rebuildWallBoundParticleDirectoryKernel.cuh",
       "common/operators/relaxMobileParticlesToResidentGasKernelStatic.cuh",
       "common/operators/solidRecoveryFromParticleMomentsCell.cuh",
       "common/thermal_particle_restart_schema7.py",
       "common/wall/GpuAluminaProperties.H",
       "common/wall/GpuCapillaryDetachment.H",
+      "common/wall/GpuColdWall1DAdvance.inl",
       "common/wall/GpuColdWall1DAlgebra.cuh",
       "common/wall/GpuColdWall1DDevice.cuh",
+      "common/wall/GpuColdWall1DGasOnly.cuh",
+      "common/wall/GpuColdWall1DInputs.inl",
       "common/wall/GpuColdWall1DPublish.inl",
       "common/wall/GpuColdWall2DDevice.cuh",
       "common/wall/GpuColdWall2DSolidification.H",
@@ -1475,7 +1504,8 @@
       "common/wall/GpuParticleWallContactHeat.H",
       "common/wall/GpuSommerfeldSticking.H",
       "common/wall/GpuWallContactDirectory.cuh",
-      "common/wall/GpuWallInterfaceHeat.H"
+      "common/wall/GpuWallInterfaceHeat.H",
+      "tools/managed_mirrors.json"
     ]
   },
   "local_differences": {
@@ -1486,6 +1516,15 @@
     "applications/gasUGKP/tests/test_source_hash_contract.py": "Repository-specific test paths/expectations: retained as independent inputs; not production gas source.",
     "applications/gasUGKP/tests/test_strict_csr_level_contract.py": "Repository-specific test paths/expectations: retained as independent inputs; not production gas source.",
     "applications/gasUGKP/tests/test_unified_scheduling_tools_contract.py": "Repository-specific test paths/expectations: retained as independent inputs; not production gas source.",
-    "applications/gasUGKP/tests/test_wall_gks_contract.py": "Repository-specific test paths/expectations: retained as independent inputs; not production gas source."
+    "applications/gasUGKP/tests/test_wall_gks_contract.py": "Repository-specific test paths/expectations: retained as independent inputs; not production gas source.",
+    "common/GpuSchedulingConfiguration.H": "Package-specific public scheduling contract: thermal accepts L0/L1/L2 and automatic heavy scheduling; fluid retains research variants. Never synchronize this entry header.",
+    "common/GpuResearchHierarchy.H": "Fluid-only research decoder; absent from thermal by user request on 2026-10-03.",
+    "tools/managed_mirrors.json": "Package-specific thermal formal-only interface contract; fluid unchanged.",
+    "applications/gasUGKP/tests/test_particle_cell_path_runtime_contract.py": "Package-specific thermal formal-only interface contract; fluid unchanged.",
+    "common/wall/GpuColdWall1DInputs.inl": "CHT cold-wall implementation is thermal-only; fluid gasUGKP does not include this file.",
+    "common/wall/GpuColdWall1DAdvance.inl": "CHT cold-wall implementation is thermal-only; fluid gasUGKP does not include this file.",
+    "common/GpuThermalLaunchOccupancy.cuh": "FSH/CHT launch occupancy is thermal-only; fluid gasUGKP does not include this file.",
+    "common/operators/appendSelectedStuckParticleIndex.cuh": "FSH/CHT wall-bound particle indexing is thermal-only; fluid gasUGKP does not include this file.",
+    "common/operators/atomicAddParticleWallEnergyByFace.cuh": "FSH/CHT particle-wall energy accounting is thermal-only; fluid gasUGKP does not include this file."
   }
 }

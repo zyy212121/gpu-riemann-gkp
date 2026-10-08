@@ -19,8 +19,7 @@ void stage(State&s,double dt){for(int c=0;c<2;++c){threadIdx.x=c;applySstWallFun
 @pytest.mark.parametrize('bits',[32,64])
 @pytest.mark.parametrize('rk',[1,2,3])
 def test_sst_source_constraint_transport_audit_follows_rk(tmp_path,bits,rk):
-    # The fluid baseline projects high-Re wall omega in its explicit host-stage
-    # call. It does not own the thermal baseline's low-Re equation suppression.
+    # Both wall treatments now follow the approved thermal owner-cell constraint.
     compile_probe(tmp_path,fixture()+AUDIT+r'''
 int main(){State s;initialise(s);s.sstConfigured=1;s.sstWallTreatment=1;s.gasMu=.02;s.sstWallKappa=.41;s.sstWallE=9.8;s.sstWallCmu=.09;s.riemannBoundaryKind[1]=2;
 audit(s);Real k0[2]={s.rhoK[0],s.rhoK[1]},o0[2]={s.rhoOmega[0],s.rhoOmega[1]};
@@ -76,7 +75,7 @@ for(int k=0;k<2;++k)near(s.gasSpecies.rho[2*k]*newV[0]+s.gasSpecies.rho[2*k+1]*n
 
 @pytest.mark.parametrize('bits',[32,64])
 def test_fluid_mixture_low_re_dirichlet_wall_flux_source_and_audit(tmp_path,bits):
-    """Fluid's retained low-Re scheme diffuses a wall value, not a cell constraint."""
+    """Thermal-aligned low-Re owner constraint preserves gas/species and the SST ledger."""
     from test_mixture_transport import fixture as mixture_fixture
     near=r'''void near(Real a,Real b,const char*m){ck(std::abs(a-b)<=Real(256)*std::numeric_limits<Real>::epsilon()*std::max(Real(1),std::abs(b)),m);}'''
     compile_probe(tmp_path,mixture_fixture()+near+AUDIT+r'''
@@ -89,22 +88,25 @@ audit(s);const Real initialE=s.rhoE[0]+s.rhoE[1];
 Real k0[2]={s.rhoK[0],s.rhoK[1]},o0[2]={s.rhoOmega[0],s.rhoOmega[1]};
 const Real wallOmega=Real(6)*s.gasMu/(s.rho[0]*s.sstCoefficients.beta1*s.sstWallDistance[0]*s.sstWallDistance[0]);
 near(sstBoundaryValue(s,1,0,false),0,"fluid low-Re wall k is not zero");
-near(sstBoundaryValue(s,1,0,true),wallOmega,"fluid low-Re omega Dirichlet value differs from its stated cell-nu scheme");
-for(int c=0;c<2;++c){threadIdx.x=c;applySstWallFunctionStateKernel(&s);near(s.rhoK[c],k0[c],"low-Re call projected k");near(s.rhoOmega[c],o0[c],"fluid low-Re call projected adjacent-cell omega");near(s.gasSstAudit.constraintOmega[c],0,"unapplied low-Re constraint gained an audit entry");}
+near(sstBoundaryValue(s,1,0,true),wallOmega,"low-Re constrained owner omega differs from the viscous wall target");
+for(int c=0;c<2;++c){threadIdx.x=c;applySstWallFunctionStateKernel(&s);near(s.rhoK[c],k0[c],"low-Re call projected k");near(s.rhoOmega[c],o0[c],"repeated low-Re owner projection is not idempotent");near(s.gasSstAudit.constraintOmega[c],0,"idempotent low-Re projection gained an audit entry");}
 const Real dt=Real(1e-4);
 for(int c=0;c<2;++c){threadIdx.x=c;computeGasPrimitiveGradientsKernel(&s);computeSstGradientsKernel(&s);computeGasGradientLimiterKernel(&s);computeGasEddyViscosityKernel(&s);}
 for(int f=0;f<3;++f){threadIdx.x=f;computeGasInternalFaceFluxKernel<true>(&s,dt);ck(s.gasSpecies.faceStatus[f]==0,"low-Re mixture wall gas flux rejected");}
 for(int c=0;c<2;++c){threadIdx.x=c;computeGasFluxPositivityScaleKernel(&s,dt);}
 for(int f=0;f<3;++f){threadIdx.x=f;applyGasFluxPositivityScaleKernel(&s);computeSstFaceFluxKernel(&s);}
 near(s.sstPhiRhoK[1],s.gasMu*s.deltaCoeffs[1]*s.k[0]*s.magSf[1],"wall k diffusion does not match Dirichlet gradient");
-near(s.sstPhiRhoOmega[1],-s.gasMu*s.deltaCoeffs[1]*(wallOmega-s.omega[0])*s.magSf[1],"wall omega diffusion does not match Dirichlet gradient");
+near(s.sstPhiRhoOmega[1],0,"constrained wall omega must have zero normal diffusion");
 near(s.gasPhiRho[1],0,"stationary wall leaked gas mass");near(s.gasPhiRhoE[1],0,"stationary adiabatic wall leaked energy");
 for(int k=0;k<2;++k)near(s.gasSpecies.flux[k*s.nFaces+1],0,"impermeable wall leaked a species");
 const Real expectedTransportOmega=-dt*(s.sstPhiRhoOmega[0]+s.sstPhiRhoOmega[1]);
-for(int c=0;c<2;++c){threadIdx.x=c;applySstFluxAndSourceKernel(&s,dt);applyGasFluxDivergenceByCellKernel(&s,dt);recoverGasPrimitivesKernel(&s);recoverSstPrimitivesKernel(&s);ck(s.gasSpecies.cellStatus[c]==0,"low-Re mixture wall state rejected");checkBudget(s,k0[c],o0[c],c);near(s.gasSstAudit.constraintOmega[c],0,"fluid low-Re omega equation was unexpectedly suppressed or clipped");}
+for(int c=0;c<2;++c){threadIdx.x=c;applySstFluxAndSourceKernel(&s,dt);applyGasFluxDivergenceByCellKernel(&s,dt);recoverGasPrimitivesKernel(&s);recoverSstPrimitivesKernel(&s);ck(s.gasSpecies.cellStatus[c]==0,"low-Re mixture wall state rejected");checkBudget(s,k0[c],o0[c],c);if(c==1)near(s.gasSstAudit.constraintOmega[c],0,"nonwall omega was unexpectedly constrained");}
 near(s.gasSstAudit.transportOmega[0],expectedTransportOmega,"wall omega transport audit wrong");
-ck(std::abs(s.gasSstAudit.sourceOmega[0])>Real(1e-6),"low-Re omega source disappeared");
-near(s.rhoOmega[0],o0[0]+expectedTransportOmega+s.gasSstAudit.sourceOmega[0],"low-Re omega source was not applied");
+ck(std::abs(s.gasSstAudit.sourceOmega[1])>Real(1e-6),"nonwall omega source disappeared");
+near(s.omega[0],wallOmega,"wall-adjacent omega did not retain its viscous target");
+near(s.rhoOmega[0],s.rho[0]*wallOmega,"constrained omega is inconsistent with current density");
+near(s.gasSstAudit.constraintOmega[0],s.rhoOmega[0]-o0[0]-expectedTransportOmega-s.gasSstAudit.sourceOmega[0],"suppressed RHS and recovery projection ledger is inconsistent");
+ck(s.gasSstAudit.constraintOmega[0]!=0,"suppressed wall omega RHS was not recorded");
 near(s.rhoE[0]+s.rhoE[1],initialE,"low-Re mixture formation-inclusive energy changed");
 for(int k=0;k<2;++k)near(s.gasSpecies.rho[k*2]+s.gasSpecies.rho[k*2+1],1,"low-Re mixture species not conserved");
 }

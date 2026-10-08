@@ -404,12 +404,8 @@ class SourceContractTests(unittest.TestCase):
             self.assertNotIn(removed_fixed_control, mirror)
 
     def test_csr_heavy_and_warp_aggregation_source_contract(self) -> None:
-        cuda = "\n".join(
-            (
-                read("private_backend/GpuResidentStrict.cu"),
-                (ROOT.parents[1] / "common/CsrPersistentQueue.cuh").read_text(),
-            )
-        )
+        from source_contract_utils import _included_source
+        cuda = _included_source(ROOT / "private_backend/GpuResidentStrict.cu")
         for token in (
             "prepareCsrSegmentedReductionTasks",
             "countCsrReductionTasksKernel",
@@ -423,7 +419,8 @@ class SourceContractTests(unittest.TestCase):
             "__match_any_sync",
             "groupMask",
             "laneRank",
-            "1 + (count - 1)/s.csrHeavyTileParticles",
+            "1 + (count - 1)/tile",
+            "const int tile = s.csrHeavyTileParticles;",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, cuda)
@@ -435,7 +432,7 @@ class SourceContractTests(unittest.TestCase):
             cuda,
             r"cudaMemcpy(?:Async)?\s*\([^;]*csrHeavyTaskCount",
         )
-        self.assertIn("ToolB3 occupancy decision", cuda)
+        self.assertIn("automatic CSR occupancy decision", cuda)
 
     def test_validation_cases_select_the_expected_models(self) -> None:
         laminar_root = ROOT / "examples/gks_flux_validation"

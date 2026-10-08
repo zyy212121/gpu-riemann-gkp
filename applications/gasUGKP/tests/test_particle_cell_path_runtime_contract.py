@@ -58,10 +58,11 @@ class ParticleCellPathRuntimeContract(unittest.TestCase):
             )
 
     def test_both_execution_paths_are_present(self) -> None:
-        cuda = source("private_backend/GpuResidentStrict.cu")
+        from source_contract_utils import _included_source
+        cuda = _included_source(ROOT / "private_backend/GpuResidentStrict.cu")
         for symbol in (
-            "applyCollisionalPressureProjectionCellAtomicKernel",
-            "applyCollisionalPressureProjectionParticlesAtomicKernel",
+            "preparePressureProjectionCacheKernel",
+            "applyCachedPressureProjectionParticlesKernel",
             "accumulateParticlePoolAtomicKernel",
             "clearParticleMomentsAndCountsAtomicKernel",
             "accumulateParticleMomentsAtomicKernel",
@@ -78,7 +79,7 @@ class ParticleCellPathRuntimeContract(unittest.TestCase):
         )
         self.assertIn("binParticlesByCell", cuda)
         self.assertIn("accumulateParticleMomentsSegmentedKernel", cuda)
-        self.assertIn("gatherCellLocalParticlesKernel", cuda)
+        self.assertIn("gatherCellLocalParticlePayloadKernel<true>", cuda)
 
     def test_runtime_banner_identifies_the_selected_path(self) -> None:
         wrapper = source("gpu/GpuResidentStrict.H")

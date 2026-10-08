@@ -47,6 +47,37 @@ __global__ void validateGasStageGeometryKernel(GasState* sp,const GPU_OPERATOR_T
 }
 
 // One operator implementation; scalar/time adapters are compile-time only.
+// Interpolate the conservative cell diffusion coefficients with the same
+// owner-oriented weight used by the face flux, including coupled faces.
+template<class GasState>
+__device__ void sstInternalRhoDiffusivities
+(
+    const GasState& s,
+    const int f,
+    const int nei,
+    GPU_OPERATOR_REAL& rhoDk,
+    GPU_OPERATOR_REAL& rhoDomega
+)
+{
+    const int own = s.faceOwner[f];
+    const GPU_OPERATOR_REAL weight = clampRange
+    (
+        s.faceWeight[f], GPU_OPERATOR_R(0.0), GPU_OPERATOR_R(1.0)
+    );
+    const GPU_OPERATOR_REAL nuOwn = s.gasMu/clampMin(s.rho[own], s.rhoMin);
+    const GPU_OPERATOR_REAL nuNei = s.gasMu/clampMin(s.rho[nei], s.rhoMin);
+    rhoDk =
+        weight*s.rho[own]
+       *(nuOwn + ugkwp::sstAlphaK(s.sstF1[own], s.sstCoefficients)*s.nut[own])
+      + (GPU_OPERATOR_R(1.0) - weight)*s.rho[nei]
+       *(nuNei + ugkwp::sstAlphaK(s.sstF1[nei], s.sstCoefficients)*s.nut[nei]);
+    rhoDomega =
+        weight*s.rho[own]
+       *(nuOwn + ugkwp::sstAlphaOmega(s.sstF1[own], s.sstCoefficients)*s.nut[own])
+      + (GPU_OPERATOR_R(1.0) - weight)*s.rho[nei]
+       *(nuNei + ugkwp::sstAlphaOmega(s.sstF1[nei], s.sstCoefficients)*s.nut[nei]);
+}
+
 template<class GasState>
 __global__ void computeSstFaceFluxKernel(GasState* sp)
 {
@@ -133,6 +164,13 @@ __global__ void computeSstFaceFluxKernel(GasState* sp)
         nuFace
       + ugkwp::sstAlphaOmega(f1Face, s.sstCoefficients)*nutFace;
 
+    GPU_OPERATOR_REAL rhoDk = rhoFace*dk;
+    GPU_OPERATOR_REAL rhoDomega = rhoFace*domega;
+    if (nei >= 0)
+    {
+        sstInternalRhoDiffusivities(s, f, nei, rhoDk, rhoDomega);
+    }
+
     GPU_OPERATOR_REAL snGradK = GPU_OPERATOR_R(0.0);
     GPU_OPERATOR_REAL snGradOmega = GPU_OPERATOR_R(0.0);
     if (nei >= 0)
@@ -207,9 +245,9 @@ __global__ void computeSstFaceFluxKernel(GasState* sp)
 
     const GPU_OPERATOR_REAL area = s.magSf[f];
     s.sstPhiRhoK[f] =
-        massFlux*kUpwind - rhoFace*dk*snGradK*area;
+        massFlux*kUpwind - rhoDk*snGradK*area;
     s.sstPhiRhoOmega[f] =
-        massFlux*omegaUpwind - rhoFace*domega*snGradOmega*area;
+        massFlux*omegaUpwind - rhoDomega*snGradOmega*area;
 }
 
 template<class GasState>
@@ -322,6 +360,7 @@ __global__ void applySstFluxAndSourceKernel
     if(moving && !ugkwp::gasGeometryCellVolumes(s,c,dt,oldVolume,newVolume))
     { if(!ugkwp::gasRecordCellFailure(s,c,ugkwp::GasTransportCode::InvalidGeometry))asm("trap;"); return; }
     if(moving && ugkwp::gasCellFailure(s,c)!=0)return;
+    bool constrainedOmega = false;
     GPU_OPERATOR_REAL fluxK = GPU_OPERATOR_R(0.0);
     GPU_OPERATOR_REAL fluxOmega = GPU_OPERATOR_R(0.0);
     const int start = s.cellPlaneStart[c];
@@ -338,6 +377,12 @@ __global__ void applySstFluxAndSourceKernel
         const GPU_OPERATOR_REAL sign = s.faceOwner[f] == c ? -GPU_OPERATOR_R(1.0) : GPU_OPERATOR_R(1.0);
         fluxK += sign*s.sstPhiRhoK[f];
         fluxOmega += sign*s.sstPhiRhoOmega[f];
+        constrainedOmega = constrainedOmega ||
+        (
+            (s.sstWallTreatment == 0 || s.sstWallTreatment == 1)
+         && f >= s.nInternalFaces
+         && s.riemannBoundaryKind[f] == 2
+        );
     }
 
     GPU_OPERATOR_REAL divU = GPU_OPERATOR_R(0.0);
@@ -383,7 +428,8 @@ __global__ void applySstFluxAndSourceKernel
     s.sstSourceNumber[c] = fmax
     (
         fabs(dt*sourceK)/clampMin(s.rhoK[c], rhoKFloor),
-        fabs(dt*sourceOmega)/clampMin(s.rhoOmega[c], rhoOmegaFloor)
+        constrainedOmega ? GPU_OPERATOR_R(0.0)
+          : fabs(dt*sourceOmega)/clampMin(s.rhoOmega[c], rhoOmegaFloor)
     );
     // Explicit sources are evaluated from the old density and old inventory.
     // Faces already carry the common ALE mass flux, so add no mesh term here.
@@ -391,7 +437,7 @@ __global__ void applySstFluxAndSourceKernel
     {
         const GPU_OPERATOR_REAL nextK=(s.rhoK[c]*oldVolume+dt*(fluxK+oldVolume*sourceK))/newVolume;
         const GPU_OPERATOR_REAL nextOmega=(s.rhoOmega[c]*oldVolume
-            +dt*(fluxOmega+oldVolume*sourceOmega))/newVolume;
+            +(constrainedOmega?GPU_OPERATOR_R(0.0):dt*(fluxOmega+oldVolume*sourceOmega)))/newVolume;
         if(!finiteDevice(nextK)||!finiteDevice(nextOmega))
         { if(!ugkwp::gasRecordCellFailure(s,c,ugkwp::GasTransportCode::NonFiniteState))asm("trap;"); return; }
         s.rhoK[c]=clampMin(nextK,rhoKFloor*oldVolume/newVolume);
@@ -401,11 +447,17 @@ __global__ void applySstFluxAndSourceKernel
     }
     s.rhoK[c] =
         clampMin(finiteOr(s.rhoK[c] + deltaRhoK, rhoKFloor), rhoKFloor);
-    s.rhoOmega[c] = clampMin
-    (
-        finiteOr(s.rhoOmega[c] + deltaRhoOmega, rhoOmegaFloor),
-        rhoOmegaFloor
-    );
+    // Both wall treatments constrain the adjacent-cell omega equation.
+    // Suppress its RHS, then primitive recovery projects to the refreshed
+    // target after k and gas density evolve. Other equations remain active.
+    if (!constrainedOmega)
+    {
+        s.rhoOmega[c] = clampMin
+        (
+            finiteOr(s.rhoOmega[c] + deltaRhoOmega, rhoOmegaFloor),
+            rhoOmegaFloor
+        );
+    }
     ugkwp::gasSstAuditEuler(s,c,beforeK,beforeOmega,oldVolume,newVolume,dt,fluxK,fluxOmega,sourceK,sourceOmega);
 }
 template<class GasState>
@@ -720,9 +772,24 @@ __global__ void computeSstStabilityNumberKernel
             nu + ugkwp::sstAlphaK(f1Face, s.sstCoefficients)*nutFace,
             nu + ugkwp::sstAlphaOmega(f1Face, s.sstCoefficients)*nutFace
         );
-        diffusionRate +=
-            (rhoFace/clampMin(s.rho[c], s.rhoMin))
-           *maximumDiffusivity*s.magSf[f]*s.deltaCoeffs[f];
+        if (other >= 0)
+        {
+            GPU_OPERATOR_REAL rhoDk;
+            GPU_OPERATOR_REAL rhoDomega;
+            sstInternalRhoDiffusivities
+            (
+                s, f, coupledFaceNeighbour(s, f), rhoDk, rhoDomega
+            );
+            diffusionRate +=
+                fmax(rhoDk, rhoDomega)/clampMin(s.rho[c], s.rhoMin)
+               *s.magSf[f]*s.deltaCoeffs[f];
+        }
+        else
+        {
+            diffusionRate +=
+                (rhoFace/clampMin(s.rho[c], s.rhoMin))
+               *maximumDiffusivity*s.magSf[f]*s.deltaCoeffs[f];
+        }
     }
     const GPU_OPERATOR_REAL diffusionNumber =
         dt*diffusionRate/clampMin(stabilityVolume, OfSmall);

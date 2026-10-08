@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "reference_commit": "28796b2270a96875bd2cfa9c0f10e117427b6d5b",
+  "rules": [
+    {
+      "path": "common/GpuSchedulingConfiguration.H",
+      "reason": "existing research hierarchy header",
+      "candidate": "#include \"GpuResearchHierarchy.H\"\n",
+      "reference": ""
+    },
+    {
+      "path": "common/GpuSchedulingConfiguration.H",
+      "reason": "research key remains accepted only in fluid",
+      "candidate": "        \"gpuCsrSplitPreDirectory\"\n",
+      "reference": "        \"gpuCsrSplitPreDirectory\",\n        \"gpuResearchVariant\"\n"
+    },
+    {
+      "path": "common/GpuSchedulingConfiguration.H",
+      "reason": "existing research bundle override, exact block only",
+      "candidate": "    if (properties.found(\"gpuResearchVariant\"))\n    {\n        const word variant(properties.lookup(\"gpuResearchVariant\"));\n        gpuResearch::Flags flags{};\n        if (!gpuResearch::decode(variant.c_str(), flags)\n         || value.csrLevel == GpuCsrLevel::automatic)\n        {\n            FatalErrorInFunction\n                << \"gpuResearchVariant requires L0|L1|T1|S1|T2|S2 (E1/E2 aliases) \"\n                << \"and cannot be combined with gpuCsrLevel auto\"\n                << exit(FatalError);\n        }\n        value.csrCellLocalPath = flags.cell;\n        value.warpAggregatedBinning = flags.warp;\n        value.splitPreDirectory = flags.split;\n        value.heavyReductionMode = flags.heavy\n          ? GpuHeavyReductionMode::enabled : GpuHeavyReductionMode::disabled;\n        Info<< \"Research hierarchy: \" << variant\n            << \" cell=\" << flags.cell << \" warp=\" << flags.warp\n            << \" split=\" << flags.split << \" heavy=\" << flags.heavy << nl;\n    }\n",
+      "reference": ""
+    },
+    {
+      "path": "applications/gasUGKP/private_backend/GpuResidentStrict.cu",
+      "reason": "namespace-owning headers must first load at global scope",
+      "candidate": "#include \"gasTransport/GasGeometryValidation.H\"\n#include \"gasTransport/SpeciesDiffusion.H\"\n",
+      "reference": ""
+    },
+    {
+      "path": "applications/gasUGKP/private_backend/GpuResidentStrict.cu",
+      "reason": "fully specialized CUDA occupancy kernel address",
+      "candidate": "        computeGasInternalFaceFluxKernel<true, DeviceState>, s->fixedFaceBlockThreads, 0) != 0)\n",
+      "reference": "        computeGasInternalFaceFluxKernel<true>, s->fixedFaceBlockThreads, 0) != 0)\n"
+    },
+    {
+      "path": "common/GpuToolB1.cuh",
+      "reason": "fully specialized CUDA occupancy kernel address",
+      "candidate": "            recoverGasPrimitivesKernel<DeviceState>,\n",
+      "reference": "            recoverGasPrimitivesKernel,\n"
+    },
+    {
+      "path": "common/GpuToolB1.cuh",
+      "reason": "fully specialized CUDA occupancy kernel address",
+      "candidate": "                computeGasInternalFaceFluxKernel<false, DeviceState>,\n",
+      "reference": "                computeGasInternalFaceFluxKernel<false>,\n"
+    },
+    {
+      "path": "common/GpuToolB1.cuh",
+      "reason": "fully specialized CUDA occupancy kernel address",
+      "candidate": "                computeGasInternalFaceFluxKernel<true, DeviceState>,\n",
+      "reference": "                computeGasInternalFaceFluxKernel<true>,\n"
+    }
+  ]
+}

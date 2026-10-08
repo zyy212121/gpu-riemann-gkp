@@ -1,0 +1,29 @@
+{
+  "reference_commit": "28796b2270a96875bd2cfa9c0f10e117427b6d5b",
+  "fluid_baseline_commit": "711b45fed9c11e2421453d574704b6d1681c899a",
+  "method": "Independent reviewer compiled and ran all 3 adapters x FP32/FP64 x baseline fluid/candidate fluid/pinned thermal. Candidate and pinned thermal outputs were byte-identical for all 6 cases. Baseline exactly matched preserved legacy golden. Only 81 SST rows of 324 changed in each precision; all 243 non-SST rows preserved. User explicitly approved thermal SST semantics before this golden update.",
+  "compiler": "g++ -std=c++17 -O0",
+  "gpu_execution": false,
+  "matrix": [
+    {
+      "real_bits": 32,
+      "total_rows": 324,
+      "changed_rows": 81,
+      "changed_turbulence_codes": [
+        3
+      ],
+      "legacy_sha256": "daef1099f81ca1610428364cc66c1530a748296bad7c51719c96124c3f5810a2",
+      "aligned_sha256": "9403def1e5435b04e2bb0974c117e94d09accd8491e2953047338b6dfc3fca39"
+    },
+    {
+      "real_bits": 64,
+      "total_rows": 324,
+      "changed_rows": 81,
+      "changed_turbulence_codes": [
+        3
+      ],
+      "legacy_sha256": "e213d4f3db444bf99d8d3a599acde9e6519d494ab04793375a44b4a24bafa711",
+      "aligned_sha256": "84bd8b512283b2116043eb891d6f0dd90752797d392ef9849df1490f1743c7d3"
+    }
+  ]
+}

@@ -138,6 +138,8 @@ def main():
                     errors.append('missing managed auxiliary: ' + repo + '/' + relative)
     if errors:
         print('\n'.join(errors))
+        if drift:
+            print('\n'.join('mirror drift: ' + p for p in drift))
         return 1
     if args.sync:
         # All paths and inventory have been validated before the first mutation.
